@@ -1,7 +1,8 @@
-import { clerkClient } from '@clerk/nextjs/server'
+import { auth, clerkClient } from '@clerk/nextjs/server'
+import { eq } from 'drizzle-orm'
 import { db, users, donor_profiles, receiver_profiles } from '@/lib/db'
 import { validateBody, z } from '@/lib/api/validate'
-import { created, err, serverError } from '@/lib/api/response'
+import { created, err, ok, serverError } from '@/lib/api/response'
 
 const signupSchema = z.object({
   email: z
@@ -23,143 +24,247 @@ const signupSchema = z.object({
     invalid_type_error: 'Role must be donor or receiver',
   }),
 
-  // ── Donor profile fields (required when role === 'donor')
-  business_name:       z.string().min(2).max(100).optional(),
-  business_type:       z.enum([
+  // Donor profile fields
+  business_name: z.string().min(2).max(100).optional(),
+  business_type: z.enum([
     'restaurant', 'bakery', 'cafe', 'caterer',
     'supermarket', 'vegetable_vendor', 'individual', 'grocery', 'other',
   ]).optional(),
-  address:             z.string().min(5).optional(),
-  city:                z.string().min(2).optional(),
+  address: z.string().min(5).optional(),
+  city: z.string().min(2).optional(),
   food_license_number: z.string().optional(),
 
-  // ── Receiver profile fields (required when role === 'receiver')
+  // Receiver profile fields
   organization_name: z.string().min(2).max(150).optional(),
   organization_type: z.enum([
     'ngo', 'shelter', 'orphanage', 'community_kitchen',
     'animal_shelter', 'feeding_program', 'other',
   ]).optional(),
-  service_area_km:  z.number().int().min(1).max(100).optional(),
-  accepts_veg:      z.boolean().optional(),
-  accepts_non_veg:  z.boolean().optional(),
-  accepts_vegan:    z.boolean().optional(),
-  accepts_cooked:   z.boolean().optional(),
-  accepts_raw:      z.boolean().optional(),
+  service_area_km: z.number().int().min(1).max(100).optional(),
+  accepts_veg: z.boolean().optional(),
+  accepts_non_veg: z.boolean().optional(),
+  accepts_vegan: z.boolean().optional(),
+  accepts_cooked: z.boolean().optional(),
+  accepts_raw: z.boolean().optional(),
   accepts_packaged: z.boolean().optional(),
   accepts_short_term: z.boolean().optional(),
-  accepts_long_term:  z.boolean().optional(),
+  accepts_long_term: z.boolean().optional(),
 })
+
+type ProfileResult =
+  | { profile: unknown; alreadyExists: boolean }
+  | { errorResponse: Response }
 
 export async function POST(req: Request) {
   try {
     const { data, error } = await validateBody(req, signupSchema)
-    if (error) return error
+    if (error || !data) return error ?? err('Invalid request body', 400, 'INVALID_BODY')
+    const payload = data
 
     const clerk = await clerkClient()
+    const normalizedEmail = payload.email.trim().toLowerCase()
+    const normalizedPhone = payload.phone ?? null
 
-    // 1. Create user in Clerk
-    let clerkUser
+    async function ensureDonorProfile(userId: string): Promise<ProfileResult> {
+      const [existing] = await db
+        .select()
+        .from(donor_profiles)
+        .where(eq(donor_profiles.user_id, userId))
+
+      if (existing) return { profile: existing, alreadyExists: true }
+
+      if (!payload.business_name || !payload.address || !payload.city) {
+        return {
+          errorResponse: err(
+            'business_name, address, and city are required to register as donor',
+            400,
+            'PROFILE_FIELDS_REQUIRED'
+          ),
+        }
+      }
+
+      const [createdProfile] = await db
+        .insert(donor_profiles)
+        .values({
+          user_id: userId,
+          business_name: payload.business_name,
+          business_type: payload.business_type ?? 'restaurant',
+          phone: normalizedPhone,
+          address: payload.address,
+          city: payload.city,
+          food_license_number: payload.food_license_number ?? null,
+        })
+        .returning()
+
+      return { profile: createdProfile, alreadyExists: false }
+    }
+
+    async function ensureReceiverProfile(userId: string): Promise<ProfileResult> {
+      const [existing] = await db
+        .select()
+        .from(receiver_profiles)
+        .where(eq(receiver_profiles.user_id, userId))
+
+      if (existing) return { profile: existing, alreadyExists: true }
+
+      if (!payload.organization_name || !payload.address || !payload.city) {
+        return {
+          errorResponse: err(
+            'organization_name, address, and city are required to register as NGO',
+            400,
+            'PROFILE_FIELDS_REQUIRED'
+          ),
+        }
+      }
+
+      const [createdProfile] = await db
+        .insert(receiver_profiles)
+        .values({
+          user_id: userId,
+          organization_name: payload.organization_name,
+          organization_type: payload.organization_type ?? 'ngo',
+          phone: normalizedPhone,
+          address: payload.address,
+          city: payload.city,
+          service_area_km: payload.service_area_km ?? 10,
+          accepts_veg: payload.accepts_veg ?? true,
+          accepts_non_veg: payload.accepts_non_veg ?? false,
+          accepts_vegan: payload.accepts_vegan ?? true,
+          accepts_cooked: payload.accepts_cooked ?? true,
+          accepts_raw: payload.accepts_raw ?? true,
+          accepts_packaged: payload.accepts_packaged ?? true,
+          accepts_short_term: payload.accepts_short_term ?? true,
+          accepts_long_term: payload.accepts_long_term ?? true,
+        })
+        .returning()
+
+      return { profile: createdProfile, alreadyExists: false }
+    }
+
+    async function ensureRoleProfile(userId: string) {
+      return payload.role === 'donor'
+        ? ensureDonorProfile(userId)
+        : ensureReceiverProfile(userId)
+    }
+
+    let clerkUserId: string | null = null
+    let accountId: string | null = null
+    let accountRole: 'donor' | 'receiver' | 'admin' | 'delivery_partner' = payload.role
+    let usingExistingAccount = false
+
     try {
-      clerkUser = await clerk.users.createUser({
-        emailAddress: [data.email],
+      const clerkUser = await clerk.users.createUser({
+        emailAddress: [normalizedEmail],
         password: data.password,
-        firstName: data.full_name.split(' ')[0],
-        lastName: data.full_name.split(' ').slice(1).join(' ') || undefined,
-        publicMetadata: { role: data.role },
+        firstName: payload.full_name.split(' ')[0],
+        lastName: payload.full_name.split(' ').slice(1).join(' ') || undefined,
+        publicMetadata: { role: payload.role },
       })
+      clerkUserId = clerkUser.id
     } catch (clerkErr: unknown) {
       const clerkError = clerkErr as { errors?: { code?: string; message?: string }[] }
       const code = clerkError?.errors?.[0]?.code ?? ''
-      if (
-        code === 'form_identifier_exists' ||
-        code === 'user_already_exists'
-      ) {
-        return err('An account with this email already exists', 409, 'EMAIL_TAKEN')
-      }
-      const message = clerkError?.errors?.[0]?.message ?? 'Failed to create account'
-      return err(message, 400, 'AUTH_ERROR')
-    }
 
-    // 2. Insert into our Neon users table
-    const [newUser] = await db
-      .insert(users)
-      .values({
-        email:     data.email,
-        full_name: data.full_name,
-        phone:     data.phone ?? null,
-        role:      data.role,
-        clerk_id:  clerkUser.id,
-        is_active: true,
-      })
-      .returning()
+      if (code === 'form_identifier_exists' || code === 'user_already_exists') {
+        const { userId: signedInClerkId } = await auth()
+        if (!signedInClerkId) {
+          return err(
+            'This email already exists. Sign in first, then register the second role.',
+            409,
+            'EMAIL_EXISTS_SIGN_IN_REQUIRED'
+          )
+        }
 
-    if (!newUser) {
-      await clerk.users.deleteUser(clerkUser.id).catch(() => null)
-      return serverError('Account creation failed')
-    }
+        const [existingUser] = await db
+          .select()
+          .from(users)
+          .where(eq(users.clerk_id, signedInClerkId))
 
-    // 3. Create profile inline — avoids needing an active session
-    let profile = null
+        if (!existingUser) {
+          return err('Account setup incomplete. Please sign up again.', 401, 'ACCOUNT_INCOMPLETE')
+        }
 
-    if (data.role === 'donor' && data.business_name && data.address && data.city) {
-      try {
-        const [donorProfile] = await db
-          .insert(donor_profiles)
-          .values({
-            user_id:             newUser.id,
-            business_name:       data.business_name,
-            business_type:       data.business_type ?? 'restaurant',
-            phone:               data.phone ?? null,
-            address:             data.address,
-            city:                data.city,
-            food_license_number: data.food_license_number ?? null,
-          })
-          .returning()
-        profile = donorProfile
-      } catch (e) {
-        console.error('[POST /api/auth/signup] donor profile creation failed:', e)
-        // non-fatal — user can complete profile later
+        if (existingUser.email.toLowerCase() !== normalizedEmail) {
+          return err(
+            'You are signed in with a different email. Use the same email account to add another role.',
+            403,
+            'EMAIL_MISMATCH'
+          )
+        }
+
+        usingExistingAccount = true
+        accountId = existingUser.id
+        accountRole = existingUser.role
+        clerkUserId = existingUser.clerk_id ?? signedInClerkId
+      } else {
+        const message = clerkError?.errors?.[0]?.message ?? 'Failed to create account'
+        return err(message, 400, 'AUTH_ERROR')
       }
     }
 
-    if (data.role === 'receiver' && data.organization_name && data.address && data.city) {
-      try {
-        const [receiverProfile] = await db
-          .insert(receiver_profiles)
-          .values({
-            user_id:           newUser.id,
-            organization_name: data.organization_name,
-            organization_type: data.organization_type ?? 'ngo',
-            phone:             data.phone ?? null,
-            address:           data.address,
-            city:              data.city,
-            service_area_km:   data.service_area_km ?? 10,
-            accepts_veg:       data.accepts_veg       ?? true,
-            accepts_non_veg:   data.accepts_non_veg   ?? false,
-            accepts_vegan:     data.accepts_vegan      ?? true,
-            accepts_cooked:    data.accepts_cooked     ?? true,
-            accepts_raw:       data.accepts_raw        ?? true,
-            accepts_packaged:  data.accepts_packaged   ?? true,
-            accepts_short_term: data.accepts_short_term ?? true,
-            accepts_long_term:  data.accepts_long_term  ?? true,
-          })
-          .returning()
-        profile = receiverProfile
-      } catch (e) {
-        console.error('[POST /api/auth/signup] receiver profile creation failed:', e)
-        // non-fatal — user can complete profile later
+    if (!usingExistingAccount) {
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          email: normalizedEmail,
+          full_name: payload.full_name,
+          phone: normalizedPhone,
+          role: payload.role,
+          clerk_id: clerkUserId,
+          is_active: true,
+        })
+        .returning()
+
+      if (!newUser) {
+        if (clerkUserId) await clerk.users.deleteUser(clerkUserId).catch(() => null)
+        return serverError('Account creation failed')
+      }
+
+      accountId = newUser.id
+      accountRole = newUser.role
+    }
+
+    if (!accountId) return serverError('Account creation failed')
+
+    const profileResult = await ensureRoleProfile(accountId)
+    if ('errorResponse' in profileResult) return profileResult.errorResponse
+
+    const { profile, alreadyExists } = profileResult
+
+    if (accountRole !== payload.role) {
+      await db
+        .update(users)
+        .set({
+          role: payload.role,
+          full_name: payload.full_name,
+          phone: normalizedPhone,
+        })
+        .where(eq(users.id, accountId))
+
+      if (clerkUserId) {
+        await clerk.users
+          .updateUser(clerkUserId, { publicMetadata: { role: payload.role } })
+          .catch(() => null)
       }
     }
 
-    return created({
+    const responseData = {
       user: {
-        id:    newUser.id,
-        email: newUser.email,
-        role:  newUser.role,
+        id: accountId,
+        email: normalizedEmail,
+        role: payload.role,
       },
       profile,
-      message: 'Account created successfully.',
-    })
+      message:
+        usingExistingAccount
+          ? (alreadyExists
+              ? `Already registered as ${payload.role === 'donor' ? 'donor' : 'NGO'}.`
+              : `Added ${payload.role === 'donor' ? 'donor' : 'NGO'} role to your existing account.`)
+          : 'Account created successfully.',
+    }
+
+    if (usingExistingAccount || alreadyExists) return ok(responseData)
+    return created(responseData)
   } catch (e) {
     console.error('[POST /api/auth/signup]', e)
     return serverError()

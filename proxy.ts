@@ -6,6 +6,10 @@ import { RATE_LIMIT } from '@/lib/constants'
 // ── Public routes — never require authentication
 const isPublicRoute = createRouteMatcher([
   '/',
+  '/how-it-works',
+  '/for-donors',
+  '/for-ngos',
+  '/impact-overview',
   '/login(.*)',
   '/register',
   '/donor/register',

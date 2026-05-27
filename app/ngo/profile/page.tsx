@@ -19,6 +19,19 @@ function Field({ label, required, children }: { label: string; required?: boolea
   )
 }
 
+function getErrorMessage(payload: unknown, fallback: string) {
+  if (!payload || typeof payload !== 'object') return fallback
+  const record = payload as Record<string, unknown>
+  const err = record.error
+
+  if (typeof err === 'string') return err
+  if (err && typeof err === 'object' && typeof (err as Record<string, unknown>).message === 'string') {
+    return (err as Record<string, unknown>).message as string
+  }
+  if (typeof record.message === 'string') return record.message
+  return fallback
+}
+
 const checkbox = (label: string, checked: boolean, onChange: (v: boolean) => void) => (
   <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground hover:bg-secondary">
     <input
@@ -139,10 +152,10 @@ export default function NGOProfilePage() {
       ])
       if (!profileRes.ok) {
         const body = await profileRes.json().catch(() => ({}))
-        setError(body.error?.message ?? 'Failed to save profile')
+        setError(getErrorMessage(body, 'Failed to save profile'))
       } else if (!meRes.ok) {
         const body = await meRes.json().catch(() => ({}))
-        setError(body.error?.message ?? 'Failed to update account details')
+        setError(getErrorMessage(body, 'Failed to update account details'))
       } else {
         setSaved(true)
         setTimeout(() => setSaved(false), 3000)
@@ -167,7 +180,7 @@ export default function NGOProfilePage() {
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
-        setError(body.error ?? 'Failed to change password')
+        setError(getErrorMessage(body, 'Failed to change password'))
       } else {
         setPasswords({ old: '', new: '' })
         setSaved(true)
@@ -181,8 +194,13 @@ export default function NGOProfilePage() {
   async function handleDeleteAccount() {
     if (!confirm('Are you sure? This cannot be undone.')) return
     try {
-      await fetch('/api/auth/account', { method: 'DELETE' })
-      router.push('/')
+      const res = await fetch('/api/auth/account', { method: 'DELETE' })
+      if (res.ok) {
+        router.push('/')
+      } else {
+        const body = await res.json().catch(() => ({}))
+        setError(getErrorMessage(body, 'Failed to delete account'))
+      }
     } catch {
       setError('Failed to delete account')
     }

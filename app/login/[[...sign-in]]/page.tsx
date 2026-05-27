@@ -3,7 +3,19 @@ import { ArrowLeft } from 'lucide-react'
 import { SignIn } from '@clerk/nextjs'
 import { Logo } from '@/components/mealsaver/logo'
 
-export default function LoginCatchAll() {
+type LoginSearchParams = Promise<{
+  role?: string
+}>
+
+export default async function LoginCatchAll({
+  searchParams,
+}: {
+  searchParams: LoginSearchParams
+}) {
+  const params = await searchParams
+  const selectedRole = params.role === 'receiver' ? 'receiver' : 'donor'
+  const redirectUrl = `/api/auth/redirect?role=${selectedRole}`
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
       {/* Back to home */}
@@ -23,6 +35,29 @@ export default function LoginCatchAll() {
         </p>
       </div>
 
+      <div className="mb-4 flex w-full max-w-[420px] items-center gap-2 rounded-xl border border-border bg-card p-1">
+        <Link
+          href="/login?role=donor"
+          className={`flex-1 rounded-lg px-3 py-2 text-center text-sm font-semibold transition-colors ${
+            selectedRole === 'donor'
+              ? 'bg-primary text-primary-foreground'
+              : 'text-muted-foreground hover:bg-secondary'
+          }`}
+        >
+          Donor Login
+        </Link>
+        <Link
+          href="/login?role=receiver"
+          className={`flex-1 rounded-lg px-3 py-2 text-center text-sm font-semibold transition-colors ${
+            selectedRole === 'receiver'
+              ? 'bg-primary text-primary-foreground'
+              : 'text-muted-foreground hover:bg-secondary'
+          }`}
+        >
+          NGO Login
+        </Link>
+      </div>
+
       <SignIn
         appearance={{
           elements: {
@@ -31,9 +66,13 @@ export default function LoginCatchAll() {
             headerSubtitle:    'text-muted-foreground',
             formButtonPrimary: 'bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg',
             footerActionLink:  'text-primary hover:underline font-medium',
+            socialButtonsBlockButton: 'hidden',
+            socialButtonsIconButton: 'hidden',
+            dividerLine: 'hidden',
+            dividerText: 'hidden',
           },
         }}
-        fallbackRedirectUrl="/api/auth/redirect"
+        fallbackRedirectUrl={redirectUrl}
         signUpUrl="/register"
       />
     </div>

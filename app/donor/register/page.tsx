@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useSignIn } from '@clerk/nextjs'
 import { Eye, EyeOff, UserCircle2, CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
 import { Logo } from '@/components/mealsaver/logo'
 
@@ -34,6 +35,7 @@ const INITIAL: FormState = {
 
 export default function DonorRegisterPage() {
   const router = useRouter()
+  const { signIn, fetchStatus } = useSignIn()
 
   const [form, setForm] = useState<FormState>(INITIAL)
   const [showPw, setShowPw] = useState(false)
@@ -68,26 +70,69 @@ export default function DonorRegisterPage() {
     setLoading(true)
 
     try {
-      // ── Create account + profile in one request
-      const signupRes = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email:               form.email.trim(),
-          password:            form.password,
-          full_name:           form.full_name.trim(),
-          phone:               form.phone ? `+91${form.phone.replace(/\D/g, '')}` : undefined,
-          role:                'donor',
-          business_name:       form.business_name.trim(),
-          business_type:       form.business_type,
-          address:             form.address.trim(),
-          city:                form.city.trim(),
-          food_license_number: form.food_license_number.trim() || undefined,
-        }),
-      })
+      const payload = {
+        email:               form.email.trim(),
+        password:            form.password,
+        full_name:           form.full_name.trim(),
+        phone:               form.phone ? `+91${form.phone.replace(/\D/g, '')}` : undefined,
+        role:                'donor',
+        business_name:       form.business_name.trim(),
+        business_type:       form.business_type,
+        address:             form.address.trim(),
+        city:                form.city.trim(),
+        food_license_number: form.food_license_number.trim() || undefined,
+      }
 
-      const signupJson = await safeJson(signupRes)
+      const submitSignup = async () => {
+        const signupRes = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        const signupJson = await safeJson(signupRes)
+        return { signupRes, signupJson }
+      }
+
+      // ── Create account + profile in one request
+      const { signupRes, signupJson } = await submitSignup()
       if (!signupRes.ok) {
+        if (signupJson?.error?.code === 'EMAIL_EXISTS_SIGN_IN_REQUIRED') {
+          if (fetchStatus === 'fetching') {
+            setError('Authentication is still loading. Please try again in a moment.')
+            return
+          }
+
+          try {
+            const signInResult = await signIn.password({
+              identifier: payload.email,
+              password: payload.password,
+            })
+
+            if (signInResult.error) {
+              setError('Could not verify your existing account. Please log in and try again.')
+              return
+            }
+
+            const finalizeResult = await signIn.finalize()
+            if (finalizeResult.error) {
+              setError('Could not verify your existing account. Please log in and try again.')
+              return
+            }
+
+            const retry = await submitSignup()
+            if (!retry.signupRes.ok) {
+              setError(retry.signupJson?.error?.message ?? `Signup failed (${retry.signupRes.status})`)
+              return
+            }
+
+            setEmailSent(true)
+            return
+          } catch {
+            setError('This email already exists. Enter the correct password to add donor role.')
+            return
+          }
+        }
+
         setError(signupJson?.error?.message ?? `Signup failed (${signupRes.status})`)
         return
       }
@@ -117,7 +162,7 @@ export default function DonorRegisterPage() {
             Log in to start donating food.
           </p>
           <Link
-            href="/login"
+            href="/login?role=donor"
             className="block w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
           >
             Log in to Dashboard

@@ -1,5 +1,4 @@
 import { auth } from '@clerk/nextjs/server'
-import { db, users } from '@/lib/db'
 import { eq } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
 
@@ -10,16 +9,49 @@ const roleDestination: Record<string, string> = {
   delivery_partner: '/delivery/dashboard',
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   const { userId: clerkId } = await auth()
 
   if (!clerkId) redirect('/login')
 
+  // Allow local UI work even when DB is not configured.
+  if (!process.env.DATABASE_URL) redirect('/')
+
+  const { db, users, donor_profiles, receiver_profiles } = await import('@/lib/db')
+
   const [profile] = await db
-    .select({ role: users.role })
+    .select({ id: users.id, role: users.role })
     .from(users)
     .where(eq(users.clerk_id, clerkId))
 
-  const dest = profile ? (roleDestination[profile.role] ?? '/donor/dashboard') : '/donor/dashboard'
+  if (!profile) redirect('/register')
+
+  const [donorProfile, receiverProfile] = await Promise.all([
+    db
+      .select({ id: donor_profiles.id })
+      .from(donor_profiles)
+      .where(eq(donor_profiles.user_id, profile.id))
+      .then(rows => rows[0] ?? null),
+    db
+      .select({ id: receiver_profiles.id })
+      .from(receiver_profiles)
+      .where(eq(receiver_profiles.user_id, profile.id))
+      .then(rows => rows[0] ?? null),
+  ])
+
+  const requestedRole = new URL(req.url).searchParams.get('role')
+  let resolvedRole = profile.role
+
+  if (requestedRole === 'donor' && donorProfile) resolvedRole = 'donor'
+  if (requestedRole === 'receiver' && receiverProfile) resolvedRole = 'receiver'
+
+  if (resolvedRole !== profile.role) {
+    await db
+      .update(users)
+      .set({ role: resolvedRole })
+      .where(eq(users.id, profile.id))
+  }
+
+  const dest = roleDestination[resolvedRole] ?? '/donor/dashboard'
   redirect(dest)
 }

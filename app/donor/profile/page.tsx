@@ -19,6 +19,19 @@ function Field({ label, required, children }: { label: string; required?: boolea
   )
 }
 
+function getErrorMessage(payload: unknown, fallback: string) {
+  if (!payload || typeof payload !== 'object') return fallback
+  const record = payload as Record<string, unknown>
+  const err = record.error
+
+  if (typeof err === 'string') return err
+  if (err && typeof err === 'object' && typeof (err as Record<string, unknown>).message === 'string') {
+    return (err as Record<string, unknown>).message as string
+  }
+  if (typeof record.message === 'string') return record.message
+  return fallback
+}
+
 export default function DonorProfilePage() {
   const router = useRouter()
 
@@ -105,12 +118,12 @@ export default function DonorProfilePage() {
       ])
 
       if (!profileRes.ok) {
-        const json = await profileRes.json()
-        return setError(json.error?.message ?? 'Failed to save profile')
+        const json = await profileRes.json().catch(() => ({}))
+        return setError(getErrorMessage(json, 'Failed to save profile'))
       }
       if (!meRes.ok) {
-        const json = await meRes.json()
-        return setError(json.error?.message ?? 'Failed to update account details')
+        const json = await meRes.json().catch(() => ({}))
+        return setError(getErrorMessage(json, 'Failed to update account details'))
       }
 
       setSaved(true)
@@ -134,8 +147,8 @@ export default function DonorProfilePage() {
       })
 
       if (!res.ok) {
-        const json = await res.json()
-        return setError(json.error ?? 'Failed to change password')
+        const json = await res.json().catch(() => ({}))
+        return setError(getErrorMessage(json, 'Failed to change password'))
       }
 
       setPasswords({ old: '', new: '' })
@@ -154,8 +167,8 @@ export default function DonorProfilePage() {
       if (res.ok) {
         router.push('/')
       } else {
-        const json = await res.json()
-        setError(json.error ?? 'Failed to delete account')
+        const json = await res.json().catch(() => ({}))
+        setError(getErrorMessage(json, 'Failed to delete account'))
       }
     } catch {
       setError('Network error. Please try again.')
