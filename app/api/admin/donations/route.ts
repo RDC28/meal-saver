@@ -1,5 +1,5 @@
 import { withAdmin } from '@/lib/api/auth-guard'
-import { db, donations, donation_images, donor_profiles, users } from '@/lib/db'
+import { db, donations } from '@/lib/db'
 import { eq, ilike, and, desc, count } from 'drizzle-orm'
 import { validateParams, z } from '@/lib/api/validate'
 import { ok, serverError } from '@/lib/api/response'

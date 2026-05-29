@@ -2,10 +2,10 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useSignIn } from '@clerk/nextjs'
 import { Eye, EyeOff, Upload, UserCircle2, CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
 import { Logo } from '@/components/mealsaver/logo'
+import { LocationPicker, type LocationValue } from '@/components/mealsaver/location-picker'
 
 type FormState = {
   organization_name: string
@@ -42,10 +42,10 @@ const INITIAL: FormState = {
 }
 
 export default function NGORegisterPage() {
-  const router = useRouter()
   const { signIn, fetchStatus } = useSignIn()
 
   const [form, setForm] = useState<FormState>(INITIAL)
+  const [location, setLocation] = useState<LocationValue | null>(null)
   const [showPw, setShowPw] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [agreed, setAgreed] = useState(false)
@@ -75,6 +75,7 @@ export default function NGORegisterPage() {
     if (!form.email.trim())             return setError('Please enter your email')
     if (!form.address.trim())           return setError('Please enter your address')
     if (!form.city.trim())              return setError('Please enter your city')
+    if (!location)                      return setError('Please pin your organisation location on the map')
     if (form.password.length < 8)       return setError('Password must be at least 8 characters')
     if (form.password !== form.confirm_password) return setError('Passwords do not match')
     if (!agreed)                        return setError('Please agree to the terms to continue')
@@ -101,6 +102,8 @@ export default function NGORegisterPage() {
         accepts_packaged:  form.accepts_packaged,
         accepts_short_term: true,
         accepts_long_term:  true,
+        latitude:           location?.lat,
+        longitude:          location?.lng,
       }
 
       const submitSignup = async () => {
@@ -308,6 +311,15 @@ export default function NGORegisterPage() {
                 placeholder="e.g. Bengaluru"
                 className={inputCls}
                 {...field('city')}
+              />
+            </Field>
+
+            {/* Pin location */}
+            <Field label="Pin your organisation location" required>
+              <LocationPicker
+                value={location}
+                onChange={setLocation}
+                placeholder="Search your address or pincode…"
               />
             </Field>
 

@@ -106,8 +106,7 @@ export const POST = withReceiver(
     }, 'POST /api/pickups/[id]/otp [notify donor]')
 
     return ok({
-      otp:     otpCode,
-      message: 'OTP generated. Share this with the donor to verify collection.',
+      message: 'OTP generated and sent to the donor. Ask the donor to verify collection.',
     })
   }
 )

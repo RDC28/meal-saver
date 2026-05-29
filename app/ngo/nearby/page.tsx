@@ -18,6 +18,15 @@ interface Donation {
   pickup_city: string
   pickup_address: string
   contact_number: string
+  distance_km: number | string | null
+}
+
+function formatDistance(value: number | string | null): string | null {
+  if (value == null) return null
+  const n = typeof value === 'string' ? parseFloat(value) : value
+  if (!Number.isFinite(n)) return null
+  if (n < 1) return `${Math.round(n * 1000)} m`
+  return `${n.toFixed(1)} km`
 }
 
 const tagColorMap: Record<string, string> = {
@@ -191,6 +200,11 @@ export default function NGONearbyPage() {
                           </span>
                           <span className="flex items-center gap-1">
                             <MapPin size={12} /> {d.pickup_city}
+                            {formatDistance(d.distance_km) && (
+                              <span className="ml-1 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                                {formatDistance(d.distance_km)}
+                              </span>
+                            )}
                           </span>
                           <span className="flex items-center gap-1">
                             <Phone size={12} /> {d.contact_number}

@@ -1,5 +1,5 @@
 import { auth } from '@clerk/nextjs/server'
-import { db, users } from '@/lib/db'
+import { db, donor_profiles, receiver_profiles, users } from '@/lib/db'
 import { eq } from 'drizzle-orm'
 import { unauthorized, forbidden, serverError } from './response'
 import type { User, UserRole } from '@/lib/db'
@@ -17,16 +17,14 @@ export type AuthContext = {
 }
 
 // Next.js App Router route context (contains params for dynamic routes)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type RouteContext = { params?: Promise<any> }
+type RouteParams = Record<string, string | string[]>
+export type RouteContext = { params?: Promise<RouteParams> }
 
 // The handler shape every protected route must match
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type ProtectedHandler = (
+export type ProtectedHandler<TCtx = RouteContext> = (
   req: NextRequest,
   auth: AuthContext,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  routeCtx: any
+  routeCtx: TCtx
 ) => Promise<Response>
 
 // ─────────────────────────────────────────────────────────────
@@ -43,11 +41,11 @@ export type ProtectedHandler = (
 //     const { id } = await ctx.params!
 //   })
 // ─────────────────────────────────────────────────────────────
-export function withAuth(
-  handler: ProtectedHandler,
+export function withAuth<TCtx = RouteContext>(
+  handler: ProtectedHandler<TCtx>,
   allowedRoles?: UserRole[]
 ) {
-  return async (req: NextRequest, routeCtx: RouteContext = {}) => {
+  return async (req: NextRequest, routeCtx: TCtx = {} as TCtx) => {
     try {
       // 1. Get Clerk session
       const { userId: clerkId } = await auth()
@@ -69,8 +67,9 @@ export function withAuth(
         return forbidden('Your account has been suspended. Contact support.')
       }
 
-      // 4. Role guard
-      if (allowedRoles && !allowedRoles.includes(profile.role)) {
+      // 4. Role guard. Donor/receiver access follows profile existence so a
+      // dual-role account is not locked out when its active role changes.
+      if (allowedRoles && !(await hasAllowedRole(profile, allowedRoles))) {
         return forbidden(`This action requires one of: ${allowedRoles.join(', ')}`)
       }
 
@@ -87,11 +86,43 @@ export function withAuth(
   }
 }
 
+async function hasAllowedRole(profile: User, allowedRoles: UserRole[]): Promise<boolean> {
+  if (allowedRoles.includes(profile.role)) return true
+  if (allowedRoles.includes('admin') && profile.role === 'admin') return true
+
+  const checks: Promise<boolean>[] = []
+
+  if (allowedRoles.includes('donor')) {
+    checks.push(
+      db
+        .select({ id: donor_profiles.id })
+        .from(donor_profiles)
+        .where(eq(donor_profiles.user_id, profile.id))
+        .limit(1)
+        .then(rows => rows.length > 0)
+    )
+  }
+
+  if (allowedRoles.includes('receiver')) {
+    checks.push(
+      db
+        .select({ id: receiver_profiles.id })
+        .from(receiver_profiles)
+        .where(eq(receiver_profiles.user_id, profile.id))
+        .limit(1)
+        .then(rows => rows.length > 0)
+    )
+  }
+
+  if (checks.length === 0) return false
+  return (await Promise.all(checks)).some(Boolean)
+}
+
 // ─────────────────────────────────────────────────────────────
 // Role-specific convenience wrappers
 // ─────────────────────────────────────────────────────────────
-export const withDonor             = (h: ProtectedHandler) => withAuth(h, ['donor'])
-export const withReceiver          = (h: ProtectedHandler) => withAuth(h, ['receiver'])
-export const withAdmin             = (h: ProtectedHandler) => withAuth(h, ['admin'])
-export const withDonorOrAdmin      = (h: ProtectedHandler) => withAuth(h, ['donor', 'admin'])
-export const withReceiverOrAdmin   = (h: ProtectedHandler) => withAuth(h, ['receiver', 'admin'])
+export const withDonor             = <TCtx = RouteContext>(h: ProtectedHandler<TCtx>) => withAuth(h, ['donor'])
+export const withReceiver          = <TCtx = RouteContext>(h: ProtectedHandler<TCtx>) => withAuth(h, ['receiver'])
+export const withAdmin             = <TCtx = RouteContext>(h: ProtectedHandler<TCtx>) => withAuth(h, ['admin'])
+export const withDonorOrAdmin      = <TCtx = RouteContext>(h: ProtectedHandler<TCtx>) => withAuth(h, ['donor', 'admin'])
+export const withReceiverOrAdmin   = <TCtx = RouteContext>(h: ProtectedHandler<TCtx>) => withAuth(h, ['receiver', 'admin'])

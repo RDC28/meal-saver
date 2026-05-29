@@ -1,8 +1,8 @@
 import { withReceiver } from '@/lib/api/auth-guard'
-import { db, donations, donation_images, donor_profiles, receiver_profiles } from '@/lib/db'
-import { eq, and, ilike, inArray, desc, asc, count } from 'drizzle-orm'
+import { db, donations, receiver_profiles } from '@/lib/db'
+import { eq, and, ilike, inArray, desc, asc, count, sql } from 'drizzle-orm'
 import { validateParams, z } from '@/lib/api/validate'
-import { ok, err, serverError } from '@/lib/api/response'
+import { ok, err } from '@/lib/api/response'
 import type { NextRequest } from 'next/server'
 
 const listSchema = z.object({
@@ -36,7 +36,7 @@ export const GET = withReceiver(
     const { page, limit, food_type, food_condition, is_urgent } = params
     const offset = (page - 1) * limit
 
-    // Load NGO's profile
+    // Load NGO's profile (location returned as raw WKT for sql joining)
     const [receiverProfile] = await db
       .select({
         city:           receiver_profiles.city,
@@ -47,6 +47,7 @@ export const GET = withReceiver(
         accepts_raw:    receiver_profiles.accepts_raw,
         accepts_packaged: receiver_profiles.accepts_packaged,
         service_area_km: receiver_profiles.service_area_km,
+        location:        receiver_profiles.location,
       })
       .from(receiver_profiles)
       .where(eq(receiver_profiles.user_id, profile.id))
@@ -91,12 +92,47 @@ export const GET = withReceiver(
 
     const where = and(...conditions)
 
+    // If the NGO has pinned a location, compute distance via PostGIS and sort nearest-first
+    // (urgent donations still bubble to the top).
+    const hasLocation = receiverProfile.location != null
+    const distanceExpr = hasLocation
+      ? sql<number>`ST_Distance(${donations.pickup_location}::geography, ${receiverProfile.location}::geography) / 1000`
+      : sql<number | null>`NULL`
+
     const [rows, [{ total }]] = await Promise.all([
       db
-        .select()
+        .select({
+          // Include all donation columns + computed distance_km
+          id:                  donations.id,
+          donor_id:            donations.donor_id,
+          donor_profile_id:    donations.donor_profile_id,
+          title:               donations.title,
+          description:         donations.description,
+          food_category:       donations.food_category,
+          food_type:           donations.food_type,
+          food_condition:      donations.food_condition,
+          quantity_kg:         donations.quantity_kg,
+          quantity_description: donations.quantity_description,
+          serves_approx:       donations.serves_approx,
+          preparation_time:    donations.preparation_time,
+          expiry_time:         donations.expiry_time,
+          pickup_address:      donations.pickup_address,
+          pickup_city:         donations.pickup_city,
+          pickup_location:     donations.pickup_location,
+          pickup_instructions: donations.pickup_instructions,
+          contact_number:      donations.contact_number,
+          status:              donations.status,
+          is_urgent:           donations.is_urgent,
+          created_at:          donations.created_at,
+          updated_at:          donations.updated_at,
+          distance_km:         distanceExpr,
+        })
         .from(donations)
         .where(where)
-        .orderBy(desc(donations.is_urgent), asc(donations.expiry_time))
+        .orderBy(
+          desc(donations.is_urgent),
+          hasLocation ? asc(distanceExpr) : asc(donations.expiry_time),
+        )
         .limit(limit)
         .offset(offset),
       db.select({ total: count() }).from(donations).where(where),

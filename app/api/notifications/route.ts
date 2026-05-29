@@ -2,7 +2,7 @@ import { withAuth } from '@/lib/api/auth-guard'
 import { db, notifications } from '@/lib/db'
 import { eq, and, desc, count } from 'drizzle-orm'
 import { validateParams, z } from '@/lib/api/validate'
-import { ok, serverError } from '@/lib/api/response'
+import { ok } from '@/lib/api/response'
 import type { NextRequest } from 'next/server'
 
 const listSchema = z.object({

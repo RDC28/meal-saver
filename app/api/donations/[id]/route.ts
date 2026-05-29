@@ -1,5 +1,13 @@
 import { withAuth, withDonor } from '@/lib/api/auth-guard'
-import { db, donations, donation_images, donor_profiles } from '@/lib/db'
+import {
+  db,
+  donations,
+  donation_images,
+  donor_profiles,
+  donation_receiver_notifications,
+  pickup_assignments,
+  receiver_profiles,
+} from '@/lib/db'
 import { eq, and } from 'drizzle-orm'
 import { validateBody, z } from '@/lib/api/validate'
 import { ok, err, notFound, forbidden, serverError } from '@/lib/api/response'
@@ -38,7 +46,7 @@ type Ctx = { params: Promise<{ id: string }> }
 // GET /api/donations/[id]
 // ─────────────────────────────────────────────────────────────
 export const GET = withAuth(
-  async (_req: NextRequest, _auth, ctx: Ctx) => {
+  async (_req: NextRequest, { profile }, ctx: Ctx) => {
     const { id } = await ctx.params
 
     const [donation] = await db
@@ -47,6 +55,57 @@ export const GET = withAuth(
       .where(eq(donations.id, id))
 
     if (!donation) return notFound('Donation')
+
+    const isOwner = donation.donor_id === profile.id
+    const isAdmin = profile.role === 'admin'
+    let canViewFull = isOwner || isAdmin
+    let canViewBasic = canViewFull
+
+    if (profile.role === 'receiver') {
+      const [[receiverProfile], [notification], [pickup]] = await Promise.all([
+        db
+          .select({
+            verification_status: receiver_profiles.verification_status,
+            city:                receiver_profiles.city,
+          })
+          .from(receiver_profiles)
+          .where(eq(receiver_profiles.user_id, profile.id)),
+        db
+          .select({ id: donation_receiver_notifications.id })
+          .from(donation_receiver_notifications)
+          .where(
+            and(
+              eq(donation_receiver_notifications.donation_id, id),
+              eq(donation_receiver_notifications.receiver_id, profile.id)
+            )
+          ),
+        db
+          .select({ id: pickup_assignments.id })
+          .from(pickup_assignments)
+          .where(
+            and(
+              eq(pickup_assignments.donation_id, id),
+              eq(pickup_assignments.receiver_id, profile.id)
+            )
+          ),
+      ])
+
+      const receiverIsVerified = receiverProfile?.verification_status === 'verified'
+      const cityMatches = receiverProfile
+        ? donation.pickup_city.toLowerCase().includes(receiverProfile.city.toLowerCase())
+        : false
+
+      canViewFull = receiverIsVerified && (!!notification || !!pickup)
+      canViewBasic = canViewFull || (
+        receiverIsVerified &&
+        donation.status === 'available' &&
+        cityMatches
+      )
+    }
+
+    if (!canViewBasic) {
+      return forbidden('You do not have access to this donation')
+    }
 
     const [images, [donorProfile]] = await Promise.all([
       db.select().from(donation_images).where(eq(donation_images.donation_id, id)),
@@ -63,7 +122,16 @@ export const GET = withAuth(
         .where(eq(donor_profiles.id, donation.donor_profile_id)),
     ])
 
-    return ok({ ...donation, donation_images: images, donor_profiles: donorProfile ?? null })
+    return ok({
+      ...donation,
+      contact_number:      canViewFull ? donation.contact_number : '',
+      pickup_address:      canViewFull ? donation.pickup_address : donation.pickup_city,
+      pickup_instructions: canViewFull ? donation.pickup_instructions : null,
+      donation_images:     images,
+      donor_profiles:      donorProfile
+        ? { ...donorProfile, phone: canViewFull ? donorProfile.phone : null }
+        : null,
+    })
   }
 )
 

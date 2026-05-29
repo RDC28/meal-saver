@@ -3,7 +3,7 @@ import {
   db, donations, donation_images, donor_profiles,
   donationStatusEnum, foodCategoryEnum, foodTypeEnum, foodConditionEnum,
 } from '@/lib/db'
-import { eq, and, ilike, inArray, desc, asc, count, sql } from 'drizzle-orm'
+import { eq, and, ilike, inArray, desc, asc, count } from 'drizzle-orm'
 
 type DonationStatus  = typeof donationStatusEnum.enumValues[number]
 type FoodCategory    = typeof foodCategoryEnum.enumValues[number]
@@ -113,11 +113,13 @@ export const GET = withAuth(async (req: NextRequest, { profile }) => {
   // Role-specific defaults
   if (my || profile.role === 'donor') {
     conditions.push(eq(donations.donor_id, profile.id))
-  } else if (profile.role === 'receiver' && !status) {
+  } else if (profile.role === 'receiver') {
     conditions.push(eq(donations.status, 'available'))
   }
 
-  if (status)         conditions.push(eq(donations.status,         status         as DonationStatus))
+  if (status && profile.role !== 'receiver') {
+    conditions.push(eq(donations.status, status as DonationStatus))
+  }
   if (city)           conditions.push(ilike(donations.pickup_city, `%${city}%`))
   if (food_category)  conditions.push(eq(donations.food_category,  food_category  as FoodCategory))
   if (food_type)      conditions.push(eq(donations.food_type,      food_type      as FoodType))
@@ -203,7 +205,7 @@ export const POST = withDonor(async (req: NextRequest, { profile }) => {
     return err('expiry_time must be in the future', 422, 'VALIDATION_ERROR')
   }
 
-  const { pickup_latitude, pickup_longitude, ...rest } = data
+  const { pickup_latitude, pickup_longitude } = data
 
   const pickup_location =
     pickup_latitude != null && pickup_longitude != null

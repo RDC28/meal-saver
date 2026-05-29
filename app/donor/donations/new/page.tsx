@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { useRouter } from 'next/navigation'
 import { AlertCircle, Plus, X, Loader2 } from 'lucide-react'
 import { DashboardSidebar } from '@/components/mealsaver/dashboard-sidebar'
+import { LocationPicker, type LocationValue } from '@/components/mealsaver/location-picker'
 import { UPLOAD } from '@/lib/constants'
 
 // ─────────────────────────────────────────────────────────────
@@ -111,6 +112,7 @@ export default function CreateDonationPage() {
   const router = useRouter()
   const [files, setFiles]         = useState<File[]>([])
   const [previews, setPreviews]   = useState<string[]>([])
+  const [location, setLocation]   = useState<LocationValue | null>(null)
   const [submitError, setError]   = useState<string | null>(null)
   const [isSubmitting, setSubmit] = useState(false)
 
@@ -145,6 +147,12 @@ export default function CreateDonationPage() {
     setSubmit(true)
     setError(null)
 
+    if (!location) {
+      setError('Please pin the pickup location on the map')
+      setSubmit(false)
+      return
+    }
+
     try {
       const expiryTime = new Date(`${values.expiry_date}T${values.expiry_time}`).toISOString()
       const preparationTime =
@@ -170,6 +178,8 @@ export default function CreateDonationPage() {
           expiry_time:         expiryTime,
           pickup_address:      values.pickup_address,
           pickup_city:         values.pickup_city,
+          pickup_latitude:     location.lat,
+          pickup_longitude:    location.lng,
           pickup_instructions: values.pickup_instructions || undefined,
           contact_number:      `+91${values.contact_number}`,
         }),
@@ -377,6 +387,15 @@ export default function CreateDonationPage() {
               </Field>
             </div>
 
+            {/* Pin pickup location */}
+            <Field label="Pin pickup location" required>
+              <LocationPicker
+                value={location}
+                onChange={setLocation}
+                placeholder="Search address, landmark, or pincode…"
+              />
+            </Field>
+
             {/* Instructions + Contact */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Field label="Pickup Instructions" error={errors.pickup_instructions?.message}>
@@ -411,7 +430,6 @@ export default function CreateDonationPage() {
                     key={i}
                     className="relative h-20 w-20 overflow-hidden rounded-xl border border-border bg-secondary"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={src} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
                     <button
                       type="button"

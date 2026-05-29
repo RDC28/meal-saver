@@ -1,5 +1,5 @@
 import { withDonor } from '@/lib/api/auth-guard'
-import { db, impact_reports, donations } from '@/lib/db'
+import { db, impact_reports } from '@/lib/db'
 import { eq, desc, sql } from 'drizzle-orm'
 import { ok, serverError } from '@/lib/api/response'
 import type { NextRequest } from 'next/server'

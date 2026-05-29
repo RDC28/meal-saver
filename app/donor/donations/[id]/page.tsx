@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import {
-  ArrowLeft, Clock, MapPin, Phone, CheckCircle2, Circle,
+  ArrowLeft, Phone, CheckCircle2, Circle,
   Store, Building2, Loader2, AlertCircle,
 } from 'lucide-react'
 import { DashboardSidebar } from '@/components/mealsaver/dashboard-sidebar'

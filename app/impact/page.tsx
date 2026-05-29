@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Download, Loader2, AlertCircle } from 'lucide-react'
+import { Loader2, AlertCircle } from 'lucide-react'
 import { DashboardSidebar } from '@/components/mealsaver/dashboard-sidebar'
 
 interface ImpactSummary {
@@ -24,7 +24,6 @@ interface ImpactReport {
 
 export default function ImpactPage() {
   const [role,    setRole]    = useState<'donor' | 'ngo' | null>(null)
-  const [name,    setName]    = useState('')
   const [summary, setSummary] = useState<ImpactSummary | null>(null)
   const [reports, setReports] = useState<ImpactReport[]>([])
   const [loading, setLoading] = useState(true)
@@ -38,8 +37,6 @@ export default function ImpactPage() {
         const me     = meJson.data ?? meJson
         const r: 'donor' | 'ngo' = me.role === 'receiver' ? 'ngo' : 'donor'
         setRole(r)
-        setName(me.full_name ?? '')
-
         const impactRes  = await fetch(r === 'ngo' ? '/api/impact/receiver' : '/api/impact/donor')
         const impactJson = await impactRes.json()
 

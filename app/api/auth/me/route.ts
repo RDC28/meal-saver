@@ -12,7 +12,7 @@ import type { NextRequest } from 'next/server'
 // ─────────────────────────────────────────────────────────────
 
 export const GET = withAuth(async (_req: NextRequest, { profile }) => {
-  let profileComplete = false
+  let profileComplete: boolean
   let profileId: string | null = null
 
   if (profile.role === 'donor') {

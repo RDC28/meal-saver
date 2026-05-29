@@ -19,17 +19,101 @@ export const POST = withReceiver(
   async (req: NextRequest, { profile }, ctx: Ctx) => {
     const { id: donationId } = await ctx.params
 
-    const { data: body, error: bodyErr } = await validateBody(req, acceptSchema)
+    const { error: bodyErr } = await validateBody(req, acceptSchema)
     if (bodyErr) return bodyErr
 
-    // Verify the receiver has a profile
+    // Verify the receiver is fully eligible before attempting the atomic claim.
     const [receiverProfile] = await db
-      .select({ id: receiver_profiles.id })
+      .select({
+        id:                 receiver_profiles.id,
+        verification_status: receiver_profiles.verification_status,
+        city:               receiver_profiles.city,
+        max_capacity_kg:    receiver_profiles.max_capacity_kg,
+        accepts_veg:        receiver_profiles.accepts_veg,
+        accepts_non_veg:    receiver_profiles.accepts_non_veg,
+        accepts_vegan:      receiver_profiles.accepts_vegan,
+        accepts_cooked:     receiver_profiles.accepts_cooked,
+        accepts_raw:        receiver_profiles.accepts_raw,
+        accepts_packaged:   receiver_profiles.accepts_packaged,
+        accepts_short_term: receiver_profiles.accepts_short_term,
+        accepts_long_term:  receiver_profiles.accepts_long_term,
+      })
       .from(receiver_profiles)
       .where(eq(receiver_profiles.user_id, profile.id))
 
     if (!receiverProfile) {
       return err('You must complete your receiver profile before accepting donations.', 400, 'PROFILE_REQUIRED')
+    }
+
+    if (receiverProfile.verification_status !== 'verified') {
+      return err('Your NGO must be verified before accepting donations.', 403, 'NOT_VERIFIED')
+    }
+
+    const [donationToAccept] = await db
+      .select({
+        id:             donations.id,
+        status:         donations.status,
+        food_category:  donations.food_category,
+        food_type:      donations.food_type,
+        food_condition: donations.food_condition,
+        quantity_kg:    donations.quantity_kg,
+        pickup_city:    donations.pickup_city,
+      })
+      .from(donations)
+      .where(eq(donations.id, donationId))
+
+    if (!donationToAccept) return notFound('Donation')
+
+    if (!['pending_acceptance', 'available'].includes(donationToAccept.status)) {
+      return err(
+        `This donation cannot be accepted — status is "${donationToAccept.status}".`,
+        409,
+        'WRONG_STATUS'
+      )
+    }
+
+    const [existingNotification] = await db
+      .select({ response: donation_receiver_notifications.response })
+      .from(donation_receiver_notifications)
+      .where(
+        and(
+          eq(donation_receiver_notifications.donation_id, donationId),
+          eq(donation_receiver_notifications.receiver_id, profile.id)
+        )
+      )
+
+    if (donationToAccept.status === 'pending_acceptance') {
+      if (!existingNotification) {
+        return err('This donation was not matched to your NGO.', 403, 'NOT_MATCHED')
+      }
+      if (existingNotification.response !== 'no_response') {
+        return err(
+          `You already responded to this donation (${existingNotification.response}).`,
+          409,
+          'ALREADY_RESPONDED'
+        )
+      }
+    }
+
+    const acceptsFoodType =
+      (donationToAccept.food_type === 'veg' && receiverProfile.accepts_veg) ||
+      (donationToAccept.food_type === 'non_veg' && receiverProfile.accepts_non_veg) ||
+      (donationToAccept.food_type === 'vegan' && receiverProfile.accepts_vegan)
+    const acceptsCondition =
+      (donationToAccept.food_condition === 'cooked' && receiverProfile.accepts_cooked) ||
+      (donationToAccept.food_condition === 'raw' && receiverProfile.accepts_raw) ||
+      (donationToAccept.food_condition === 'packaged' && receiverProfile.accepts_packaged)
+    const acceptsCategory =
+      (donationToAccept.food_category === 'short_term' && receiverProfile.accepts_short_term) ||
+      (donationToAccept.food_category === 'long_term' && receiverProfile.accepts_long_term)
+    const hasCapacity =
+      receiverProfile.max_capacity_kg == null ||
+      Number(receiverProfile.max_capacity_kg) >= Number(donationToAccept.quantity_kg)
+    const sameCity =
+      donationToAccept.pickup_city.toLowerCase().includes(receiverProfile.city.toLowerCase())
+
+    if (!acceptsFoodType || !acceptsCondition || !acceptsCategory || !hasCapacity || !sameCity) {
+      return err('This donation does not match your NGO profile or service area.', 403, 'NOT_ELIGIBLE')
     }
 
     let updatedDonation: typeof donations.$inferSelect | null = null

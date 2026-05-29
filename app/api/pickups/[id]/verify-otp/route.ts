@@ -44,11 +44,10 @@ export const POST = withAuth(
       .where(eq(donations.id, pickup.donation_id))
 
     const isDonor    = donation?.donor_id === profile.id
-    const isReceiver = pickup.receiver_id === profile.id
     const isAdmin    = profile.role === 'admin'
 
-    if (!isDonor && !isReceiver && !isAdmin) {
-      return forbidden('You are not involved in this pickup')
+    if (!isDonor && !isAdmin) {
+      return forbidden('Only the donor can verify the pickup OTP')
     }
 
     if (pickup.otp_verified) {

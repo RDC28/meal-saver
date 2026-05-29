@@ -18,7 +18,7 @@ export const POST = withDonorOrAdmin(
   async (req: NextRequest, { profile }, ctx: Ctx) => {
     const { id: donationId } = await ctx.params
 
-    const { data: body, error: bodyErr } = await validateBody(req, cancelSchema)
+    const { error: bodyErr } = await validateBody(req, cancelSchema)
     if (bodyErr) return bodyErr
 
     const [donation] = await db

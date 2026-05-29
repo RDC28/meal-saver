@@ -1,5 +1,5 @@
 import { db, donations, notifications } from '@/lib/db'
-import { eq, and, lt, inArray, sql } from 'drizzle-orm'
+import { and, lt, inArray, sql } from 'drizzle-orm'
 import { ok, serverError } from '@/lib/api/response'
 import type { NextRequest } from 'next/server'
 
@@ -7,8 +7,9 @@ import type { NextRequest } from 'next/server'
 // Called by Vercel Cron every 15 minutes.
 // Marks stale donations expired and notifies donors.
 export async function GET(req: NextRequest) {
+  const cronSecret = process.env.CRON_SECRET
   const authHeader = req.headers.get('authorization')
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return new Response('Unauthorized', { status: 401 })
   }
 

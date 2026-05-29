@@ -2,7 +2,7 @@ import { withReceiver } from '@/lib/api/auth-guard'
 import { db, donations, donation_receiver_notifications, notifications } from '@/lib/db'
 import { eq, and } from 'drizzle-orm'
 import { validateBody, z } from '@/lib/api/validate'
-import { ok, err, notFound, serverError } from '@/lib/api/response'
+import { ok, err, notFound } from '@/lib/api/response'
 import type { NextRequest } from 'next/server'
 
 type Ctx = { params: Promise<{ id: string }> }

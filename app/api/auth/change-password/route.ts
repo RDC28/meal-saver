@@ -5,6 +5,9 @@ import { ok, err, serverError } from '@/lib/api/response'
 import type { NextRequest } from 'next/server'
 
 const schema = z.object({
+  current_password: z
+    .string({ required_error: 'current_password is required' })
+    .min(1, 'Current password is required'),
   new_password: z
     .string({ required_error: 'new_password is required' })
     .min(8, 'Password must be at least 8 characters'),
@@ -21,6 +24,15 @@ export const PUT = withAuth(async (req: NextRequest, { profile }) => {
 
   try {
     const clerk = await clerkClient()
+    try {
+      await clerk.users.verifyPassword({
+        userId:   profile.clerk_id,
+        password: data.current_password,
+      })
+    } catch {
+      return err('Current password is incorrect.', 403, 'INVALID_CURRENT_PASSWORD')
+    }
+
     await clerk.users.updateUser(profile.clerk_id, {
       password: data.new_password,
     })

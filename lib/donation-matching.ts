@@ -15,17 +15,19 @@ export async function runDonationMatch(donationId: string, pickupCity: string): 
       user_id: string
       organization_name: string
       distance_km: number
+      can_accept: boolean
     }[]
+    const eligibleMatches = matches.filter(m => m.can_accept)
 
-    if (!matches || matches.length === 0) {
+    if (eligibleMatches.length === 0) {
       return { matched: 0 }
     }
 
     await db
       .insert(donation_receiver_notifications)
-      .values(matches.map(m => ({
+      .values(eligibleMatches.map(m => ({
         donation_id: donationId,
-        receiver_id: m.receiver_id,
+        receiver_id: m.user_id,
         response:    'no_response' as const,
       })))
       .onConflictDoNothing()
@@ -38,7 +40,7 @@ export async function runDonationMatch(donationId: string, pickupCity: string): 
     // Notify receivers — non-critical, run in background
     fireAndForget(
       () => db.insert(notifications).values(
-        matches.map(m => ({
+        eligibleMatches.map(m => ({
           user_id:             m.user_id,
           type:                'donation_available' as const,
           title:               'New donation available near you!',
@@ -49,7 +51,7 @@ export async function runDonationMatch(donationId: string, pickupCity: string): 
       '[runDonationMatch] notify receivers'
     )
 
-    return { matched: matches.length }
+    return { matched: eligibleMatches.length }
   } catch (e) {
     logger.error('[runDonationMatch]', 'Matching failed', e)
     return { matched: 0, error: String(e) }

@@ -171,12 +171,18 @@ export default function NGOProfilePage() {
     if (!passwords.new || passwords.new.length < 8) {
       return setError('New password must be at least 8 characters')
     }
+    if (!passwords.old) {
+      return setError('Current password is required')
+    }
     setError(null)
     try {
       const res = await fetch('/api/auth/change-password', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ new_password: passwords.new }),
+        body: JSON.stringify({
+          current_password: passwords.old,
+          new_password:     passwords.new,
+        }),
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))

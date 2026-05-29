@@ -33,6 +33,8 @@ const signupSchema = z.object({
   address: z.string().min(5).optional(),
   city: z.string().min(2).optional(),
   food_license_number: z.string().optional(),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
 
   // Receiver profile fields
   organization_name: z.string().min(2).max(150).optional(),
@@ -83,6 +85,11 @@ export async function POST(req: Request) {
         }
       }
 
+      const location =
+        payload.latitude != null && payload.longitude != null
+          ? `POINT(${payload.longitude} ${payload.latitude})`
+          : undefined
+
       const [createdProfile] = await db
         .insert(donor_profiles)
         .values({
@@ -93,6 +100,7 @@ export async function POST(req: Request) {
           address: payload.address,
           city: payload.city,
           food_license_number: payload.food_license_number ?? null,
+          location,
         })
         .returning()
 
@@ -117,6 +125,11 @@ export async function POST(req: Request) {
         }
       }
 
+      const location =
+        payload.latitude != null && payload.longitude != null
+          ? `POINT(${payload.longitude} ${payload.latitude})`
+          : undefined
+
       const [createdProfile] = await db
         .insert(receiver_profiles)
         .values({
@@ -135,6 +148,7 @@ export async function POST(req: Request) {
           accepts_packaged: payload.accepts_packaged ?? true,
           accepts_short_term: payload.accepts_short_term ?? true,
           accepts_long_term: payload.accepts_long_term ?? true,
+          location,
         })
         .returning()
 
@@ -231,11 +245,10 @@ export async function POST(req: Request) {
 
     const { profile, alreadyExists } = profileResult
 
-    if (accountRole !== payload.role) {
+    if (usingExistingAccount) {
       await db
         .update(users)
         .set({
-          role: payload.role,
           full_name: payload.full_name,
           phone: normalizedPhone,
         })
@@ -243,7 +256,7 @@ export async function POST(req: Request) {
 
       if (clerkUserId) {
         await clerk.users
-          .updateUser(clerkUserId, { publicMetadata: { role: payload.role } })
+          .updateUser(clerkUserId, { publicMetadata: { role: accountRole } })
           .catch(() => null)
       }
     }
@@ -252,7 +265,8 @@ export async function POST(req: Request) {
       user: {
         id: accountId,
         email: normalizedEmail,
-        role: payload.role,
+        role: accountRole,
+        added_role: payload.role,
       },
       profile,
       message:

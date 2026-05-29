@@ -2,10 +2,10 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useSignIn } from '@clerk/nextjs'
 import { Eye, EyeOff, UserCircle2, CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
 import { Logo } from '@/components/mealsaver/logo'
+import { LocationPicker, type LocationValue } from '@/components/mealsaver/location-picker'
 
 type FormState = {
   business_name: string
@@ -34,10 +34,10 @@ const INITIAL: FormState = {
 }
 
 export default function DonorRegisterPage() {
-  const router = useRouter()
   const { signIn, fetchStatus } = useSignIn()
 
   const [form, setForm] = useState<FormState>(INITIAL)
+  const [location, setLocation] = useState<LocationValue | null>(null)
   const [showPw, setShowPw] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [agreed, setAgreed] = useState(false)
@@ -63,6 +63,7 @@ export default function DonorRegisterPage() {
     if (!form.business_name.trim())    return setError('Please enter your business name')
     if (!form.address.trim())          return setError('Please enter your address')
     if (!form.city.trim())             return setError('Please enter your city')
+    if (!location)                     return setError('Please pin your business location on the map')
     if (form.password.length < 8)      return setError('Password must be at least 8 characters')
     if (form.password !== form.confirm_password) return setError('Passwords do not match')
     if (!agreed)                       return setError('Please agree to the terms to continue')
@@ -81,6 +82,8 @@ export default function DonorRegisterPage() {
         address:             form.address.trim(),
         city:                form.city.trim(),
         food_license_number: form.food_license_number.trim() || undefined,
+        latitude:            location?.lat,
+        longitude:           location?.lng,
       }
 
       const submitSignup = async () => {
@@ -284,6 +287,15 @@ export default function DonorRegisterPage() {
                 />
               </Field>
             </div>
+
+            {/* Pin location */}
+            <Field label="Pin your exact location" required>
+              <LocationPicker
+                value={location}
+                onChange={setLocation}
+                placeholder="Search your business address or pincode…"
+              />
+            </Field>
 
             {/* Passwords */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
