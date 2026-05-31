@@ -318,7 +318,16 @@ export default function NGORegisterPage() {
             <Field label="Pin your organisation location" required>
               <LocationPicker
                 value={location}
-                onChange={setLocation}
+                onChange={(loc) => {
+                  setLocation(loc)
+                  // Auto-fill what the geocoder could resolve, without clobbering
+                  // fields it couldn't determine.
+                  setForm(prev => ({
+                    ...prev,
+                    address: loc.street ?? prev.address,
+                    city: loc.city ?? prev.city,
+                  }))
+                }}
                 placeholder="Search your address or pincode…"
               />
             </Field>

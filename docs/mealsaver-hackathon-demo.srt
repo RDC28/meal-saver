@@ -1,0 +1,117 @@
+1
+00:00:00,000 --> 00:00:06,000
+Every day, good food is discarded
+while nearby communities still need meals.
+
+2
+00:00:06,000 --> 00:00:12,000
+MealSaver closes that gap by turning surplus food
+into a fast, accountable rescue workflow.
+
+3
+00:00:12,000 --> 00:00:19,500
+Food businesses post extra food, verified NGOs
+discover compatible pickups nearby,
+
+4
+00:00:19,500 --> 00:00:27,000
+and both sides track the handover through one platform.
+The goal is simple: rescue more, waste less.
+
+5
+00:00:27,000 --> 00:00:31,500
+Let's start as a donor.
+
+6
+00:00:31,500 --> 00:00:39,000
+The dashboard summarizes active donations,
+completed deliveries, meals saved, and food waste reduced.
+
+7
+00:00:39,000 --> 00:00:48,000
+Creating a listing captures food type, condition,
+quantity, expiry, contact details, and pickup location.
+
+8
+00:00:48,000 --> 00:00:55,500
+Cooked food with a short shelf life
+is marked urgent automatically.
+
+9
+00:00:55,500 --> 00:01:05,000
+Once submitted, MealSaver starts matching in the background
+instead of waiting for manual coordination.
+
+10
+00:01:05,000 --> 00:01:11,500
+On the NGO side, nearby donations
+are organized by urgency and distance.
+
+11
+00:01:11,500 --> 00:01:18,500
+Teams can search, filter, review pickup windows,
+and accept a suitable donation.
+
+12
+00:01:18,500 --> 00:01:26,000
+Eligibility checks cover verification, food preferences,
+service area, and capacity.
+
+13
+00:01:26,000 --> 00:01:34,000
+Acceptance creates a tracked pickup assignment
+with the donor address, contact information, timing, and status.
+
+14
+00:01:34,000 --> 00:01:43,000
+This gives the NGO a clear operational checklist
+instead of fragmented calls and messages.
+
+15
+00:01:43,000 --> 00:01:50,500
+At collection, the handover is protected
+by a six-digit OTP and a visual safety checklist.
+
+16
+00:01:50,500 --> 00:02:03,000
+The OTP ensures that the correct NGO receives the correct donation,
+while the checklist keeps accountability part of the workflow.
+
+17
+00:02:03,000 --> 00:02:08,000
+For exceptional cases, admins have oversight.
+
+18
+00:02:08,000 --> 00:02:14,000
+They can verify organizations, monitor donation status,
+and manually assign urgent pickups.
+
+19
+00:02:14,000 --> 00:02:20,000
+They can intervene as food approaches expiry.
+Automation handles the common path; people resolve edge cases.
+
+20
+00:02:20,000 --> 00:02:29,000
+Under the hood, a PostGIS query filters verified NGOs
+by distance, category compatibility, and capacity,
+
+21
+00:02:29,000 --> 00:02:39,000
+then sorts nearest first. Completed deliveries generate impact records,
+so operational actions become measurable outcomes.
+
+22
+00:02:39,000 --> 00:02:48,000
+The impact dashboard brings that together:
+meals saved, kilograms rescued, and carbon impact avoided,
+
+23
+00:02:48,000 --> 00:02:56,000
+people served, and completed donation history.
+Each number is tied to a real delivery record.
+
+24
+00:02:56,000 --> 00:03:00,000
+MealSaver: rescue surplus food, feed more people,
+and make every handover count.

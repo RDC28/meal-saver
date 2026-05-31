@@ -292,7 +292,16 @@ export default function DonorRegisterPage() {
             <Field label="Pin your exact location" required>
               <LocationPicker
                 value={location}
-                onChange={setLocation}
+                onChange={(loc) => {
+                  setLocation(loc)
+                  // Auto-fill what the geocoder could resolve, without clobbering
+                  // fields it couldn't determine.
+                  setForm(prev => ({
+                    ...prev,
+                    address: loc.street ?? prev.address,
+                    city: loc.city ?? prev.city,
+                  }))
+                }}
                 placeholder="Search your business address or pincode…"
               />
             </Field>

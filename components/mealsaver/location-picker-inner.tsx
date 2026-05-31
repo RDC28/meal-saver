@@ -4,11 +4,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import L from 'leaflet'
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet'
 import { Loader2, MapPin, Search } from 'lucide-react'
+import type { GeocodeResult } from '@/lib/geocoding'
 
 export type LocationValue = {
   lat: number
   lng: number
   address?: string
+  // Structured pieces parsed from the geocoder — let callers auto-fill form fields.
+  street?: string
+  city?: string
+  state?: string
+  postcode?: string
 }
 
 export type LocationPickerProps = {
@@ -70,7 +76,7 @@ export default function LocationPickerInner({
   )
 
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<{ lat: number; lng: number; display_name: string }[]>([])
+  const [results, setResults] = useState<GeocodeResult[]>([])
   const [searching, setSearching] = useState(false)
   const [reverseLoading, setReverseLoading] = useState(false)
   const debounceRef = useRef<number | null>(null)
@@ -105,8 +111,17 @@ export default function LocationPickerInner({
       try {
         const res = await fetch(`/api/geocode?lat=${lat}&lng=${lng}`)
         const json = await res.json()
-        if (json.data?.result) {
-          onChange({ lat, lng, address: json.data.result.display_name as string })
+        const r = json.data?.result
+        if (r) {
+          onChange({
+            lat,
+            lng,
+            address: r.display_name as string,
+            street: r.address?.street,
+            city: r.address?.city,
+            state: r.address?.state,
+            postcode: r.address?.postcode,
+          })
         }
       } catch {
         // Reverse geocoding is best-effort — coords are still set.
@@ -117,8 +132,16 @@ export default function LocationPickerInner({
     [onChange, value?.address],
   )
 
-  const handleSelectResult = (r: { lat: number; lng: number; display_name: string }) => {
-    onChange({ lat: r.lat, lng: r.lng, address: r.display_name })
+  const handleSelectResult = (r: GeocodeResult) => {
+    onChange({
+      lat: r.lat,
+      lng: r.lng,
+      address: r.display_name,
+      street: r.address?.street,
+      city: r.address?.city,
+      state: r.address?.state,
+      postcode: r.address?.postcode,
+    })
     setQuery('')
     setResults([])
   }

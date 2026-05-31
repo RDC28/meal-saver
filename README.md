@@ -1,864 +1,145 @@
 # MealSaver
+**Rescue Surplus Food. Feed More People. Save Our Planet.**
 
-MealSaver is a food-rescue platform that connects food donors with verified NGOs, shelters, community kitchens, orphanages, and feeding programs through a fast pickup and redistribution system.
-
-The platform helps reduce food waste by allowing restaurants, bakeries, cafes, caterers, supermarkets, vegetable vendors, and other donors to upload surplus food or raw materials. MealSaver then matches the donation with the nearest suitable verified receiver and coordinates pickup or delivery.
-
-> Donor uploads surplus → MealSaver finds nearest verified NGO → pickup assigned → delivery completed → waste reduced.
+MealSaver is a robust food-rescue platform that connects food businesses possessing surplus edible food with verified NGOs, shelters, and community kitchens. By leveraging real-time spatial queries and an automated matching engine, MealSaver coordinates fast pickups, validates secure handovers, and tracks social and environmental impact.
 
 ---
 
-## Project Purpose
+## Project Overview
+MealSaver acts as a connection and logistics platform to eliminate food waste. It does not store food. Instead, it facilitates the matching of food donors with nearby verified receivers, coordinates the pickup or delivery process, tracks donation statuses, verifies the safe handover of food, and measures the resulting social and environmental impact.
 
-Every day, restaurants, cafes, bakeries, caterers, supermarkets, and individuals may have extra food that can still be safely used. At the same time, NGOs and community kitchens need regular food support.
-
-MealSaver solves this gap by acting as a **connection and logistics platform**.
-
-MealSaver does **not** store food in the initial version.  
-MealSaver only helps with:
-
-- Matching donors with nearby verified receivers
-- Coordinating pickup or delivery
-- Tracking donation status
-- Verifying pickup and delivery
-- Measuring social and environmental impact
+**Core Users:**
+- **Donors:** Restaurants, bakeries, cafes, caterers, supermarkets, vegetable vendors, and grocery surplus providers.
+- **Receivers (NGOs):** Shelters, orphanages, community kitchens, animal shelters, and low-income feeding programs.
+- **Admins:** Oversee donor and NGO verification, monitor donations, handle emergency manual matching, and track overall platform impact.
+- **Delivery Partners:** Handle third-party logistics for pickups when NGOs cannot collect directly.
 
 ---
 
-## Core Users
+## Technical Architecture
 
-### 1. Donors
+### Tech Stack
+- **Frontend:** Next.js 16 (App Router), TypeScript, Tailwind CSS v4, shadcn/ui.
+- **Authentication:** Clerk Authentication (with role-based metadata synchronization).
+- **Database:** Supabase / Neon PostgreSQL (with postgis, uuid-ossp, and pg_trgm extensions enabled).
+- **ORM:** Drizzle ORM.
+- **Mapping & Data Visualization:** Leaflet Maps (react-leaflet) for spatial routing; Recharts for real-time impact analytics.
 
-Food donors can be:
+### Geospatial Matching Engine (PostGIS)
+MealSaver relies on database-level spatial queries. The `donor_profiles` and `receiver_profiles` tables store geographic points using `GEOGRAPHY(POINT)`. The platform executes a `find_nearby_receivers` stored procedure via PostGIS to execute highly optimized proximity queries, filtering for NGOs that accept the specific food category and quantity, and pairing the donor with the nearest active, verified receiver.
 
-- Restaurants
-- Bakeries
-- Cafes
-- Caterers
-- Supermarkets
-- Vegetable vendors
-- Individuals with packed or leftover food
-- Grocery surplus providers
+### Secure Handover Verification (OTP)
+To ensure accountability and prevent fraud, MealSaver utilizes a secure OTP workflow. When a donation is matched and a pickup is assigned, an OTP is generated and provided to the receiver. The receiver must present this OTP to the donor upon arrival, and the donor verifies it on their dashboard to complete the handover.
 
-### 2. Receivers
-
-Receivers can be:
-
-- NGOs
-- Shelters
-- Orphanages
-- Community kitchens
-- Animal shelters
-- Low-income feeding programs
-
-In the first version, MealSaver should focus on verified organizations only, not random direct individual receivers.
-
-### 3. Admin Team
-
-Admins manage:
-
-- Donor verification
-- NGO verification
-- Donation monitoring
-- Manual matching
-- Emergency handling
-- Reports and impact tracking
+### Automated Impact Tracking
+Upon successful delivery confirmation, MealSaver automatically generates an impact report. This tracks:
+- Approximate meals saved.
+- Total kilograms of food waste reduced.
+- Estimated CO2 impact saved (calculated at an industry average of 2.5kg CO2 saved per 1kg of food rescued).
 
 ---
 
-## MVP Scope
+## Database Schema Highlights
 
-The first version of MealSaver should focus on one local area or city zone.
+MealSaver uses a relational schema designed for strict access control and geographic efficiency.
 
-Recommended MVP:
+### Main Entities
+- **users:** Public profile linked to Clerk authentication.
+- **donor_profiles / receiver_profiles:** Detailed profiles containing business licenses (FSSAI/NGO registrations), capacity constraints, food preferences, and PostGIS location data.
+- **donations:** Listings categorized by term (short_term for perishables vs. long_term for dry goods), food condition (cooked, raw, packaged), expiry timestamp, and quantity.
+- **pickup_assignments & delivery_confirmations:** Tables coordinating the logistical state transitions and securely capturing handover verification PINs.
+- **impact_reports:** Audit rows summarizing the environmental benefits and meal savings generated automatically upon delivery.
+- **user_verifications:** Handles KYC document uploads (stored securely in Supabase Storage buckets) for admin review.
 
-```txt
-Restaurants / bakeries / cafes
-        ↓
-Upload surplus food
-        ↓
-Nearby verified NGO gets notified
-        ↓
-NGO accepts donation
-        ↓
-Pickup assigned
-        ↓
-Pickup verified
-        ↓
-Receiver confirms delivery
-        ↓
-Impact is tracked
-```
+### System Workflow
+1. **Upload:** A verified donor uploads a surplus donation (Title, Quantity, Expiry, Location).
+2. **Matching:** The system evaluates the expiry time and triggers the geospatial match, notifying the closest compatible NGOs.
+3. **Acceptance:** An NGO accepts the donation, which locks the listing. The status transitions from available to accepted, then to pickup_assigned.
+4. **Coordination:** A secure handover OTP is generated.
+5. **Pickup:** The receiver arrives and presents the OTP. The donor verifies the OTP to mark the food as picked up.
+6. **Delivery Confirmation:** The receiver confirms delivery and reports the food's condition.
+7. **Impact Generation:** The database automatically triggers the generation of an impact report, updating the donor's dashboard with the CO2 and meals saved.
 
 ---
 
-## Key Features
+## Project Structure
 
-### Donor Features
-
-* Donor registration and login
-* Business profile setup
-* Upload food donation
-* Add food type
-* Add quantity
-* Add veg / non-veg status
-* Add cooked / raw / packaged status
-* Add preparation time
-* Add expiry or safe usage time
-* Add pickup address
-* Upload food image
-* Track donation status
-* View donation history
-* View impact report
-
-### Receiver / NGO Features
-
-* NGO registration and login
-* Organization profile setup
-* Add service area
-* Add storage capability
-* Add contact details
-* View nearby available donations
-* Accept or reject donations
-* Confirm pickup
-* Confirm delivery condition
-* View received donation history
-
-### Admin Features
-
-* Verify donors
-* Verify NGOs
-* View all donations
-* Approve or reject users
-* Manually assign donations
-* Monitor active pickups
-* Track expired donations
-* Handle emergency fallback
-* Generate impact reports
-
----
-
-## Food Categories
-
-MealSaver should divide food into two major categories.
-
-### Short-Term Food
-
-Time-sensitive food that needs fast pickup.
-
-Examples:
-
-* Cooked food
-* Bakery items
-* Cut vegetables
-* Fresh prepared meals
-
-Rules:
-
-* Must be fresh
-* Must be properly packed
-* Must be picked up quickly
-* Should ideally be delivered within 30–60 minutes
-
-### Long-Term Food
-
-Food that can survive longer and may be easier to manage.
-
-Examples:
-
-* Rice bags
-* Atta
-* Packaged food
-* Onions
-* Potatoes
-* Dry groceries
-
----
-
-## Donation Upload Fields
-
-Each donation should include:
-
-* Food title
-* Food category
-* Food type
-* Quantity
-* Veg / non-veg
-* Cooked / raw / packaged
-* Preparation time
-* Expiry or safe usage time
-* Pickup address
-* Pickup instructions
-* Food image
-* Donor contact number
-* Preferred pickup time
-
----
-
-## Smart Matching Logic
-
-MealSaver should match donations based on:
-
-* Nearest verified receiver
-* Urgency
-* Food quantity
-* Receiver storage capability
-* Food compatibility
-* Pickup availability
-
-Basic matching priority:
-
-```txt
-1. Food safety
-2. Distance
-3. Urgency
-4. Receiver capacity
-5. Receiver reliability
-```
-
-Example:
-
-```txt
-Donation uploaded
-        ↓
-System checks food type, quantity, expiry, and location
-        ↓
-System finds nearby verified NGOs
-        ↓
-Nearest suitable NGOs are notified
-        ↓
-First accepted NGO gets locked
-```
-
----
-
-## Operational Flow
-
-```txt
-1. Donor uploads food donation
-
-2. System checks:
-   - food type
-   - quantity
-   - preparation time
-   - expiry time
-   - location
-
-3. Nearby verified NGOs are notified
-
-4. NGO accepts or rejects the donation
-
-5. Once accepted:
-   - donation gets reserved
-   - other NGOs cannot claim it
-
-6. Pickup is assigned:
-   - NGO pickup
-   - donor drop-off
-   - third-party delivery partner
-
-7. Pickup verification:
-   - food checked visually
-   - quantity confirmed
-   - pickup marked complete
-   - optional OTP verification
-
-8. Delivery confirmation:
-   - receiver confirms received
-   - quantity confirmed
-   - food condition confirmed
-
-9. Impact tracking:
-   - meals saved
-   - food waste reduced
-   - CO2 impact estimated
-   - donation history updated
-```
-
----
-
-## Emergency Handling
-
-If no NGO accepts a donation:
-
-```txt
-Donation remains pending
-        ↓
-Nearby backup NGOs are notified
-        ↓
-If still no acceptance, donation expires
-        ↓
-Donor is informed
-```
-
-Expired donations should not be redistributed through the platform.
-
----
-
-## Revenue Model Ideas
-
-MealSaver should not depend only on NGOs paying.
-
-Possible revenue sources:
-
-### 1. CSR Sponsorships
-
-Companies sponsor pickups, delivery, or monthly impact campaigns.
-
-Example:
-
-```txt
-ABC Company sponsors 1,000 rescued meals this month.
-```
-
-### 2. Donor Pickup Fee
-
-Restaurants or food businesses pay a small convenience or logistics fee.
-
-Example:
-
-```txt
-₹30–₹100 per pickup
-```
-
-### 3. Monthly Donor Plans
-
-For regular donors:
-
-```txt
-Basic Plan
-Pro Plan
-Impact Partner Plan
-```
-
-### 4. Impact Reports
-
-Paid verified impact reports for donors, sponsors, or CSR partners.
-
----
-
-## Tech Stack
-
-MealSaver will use the PERN stack.
-
-```txt
-P - PostgreSQL
-E - Express.js
-R - React.js
-N - Node.js
-```
-
----
-
-## Recommended Architecture
-
-```txt
+```text
 mealsaver/
-├── client/              # React frontend
-├── server/              # Node.js + Express backend
-├── database/            # SQL migrations, schema, seed data
-├── docs/                # Project planning and documentation
-├── shared/              # Shared constants, types, validation schemas
-├── .env.example
-├── README.md
-└── package.json
+├── app/                  # Next.js App Router (pages & API endpoints)
+│   ├── admin/            # Admin analytics, user verifications, emergency routing
+│   ├── api/              # Route handlers (auth, donations, pickups, impact)
+│   ├── donor/            # Donor dashboards, donation postings, history
+│   ├── ngo/              # NGO dashboards, nearby finder, active pickups
+│   ├── globals.css       # Global design tokens (Tailwind CSS v4 & custom variables)
+│   └── layout.tsx        # Root entry and providers setup
+├── components/           # Reusable UI widgets
+│   ├── mealsaver/        # Brand-specific sidebars, maps, badges, status displays
+│   └── ui/               # Base design system components (buttons, dialogs, inputs)
+├── database/             # Raw SQL migrations, Drizzle schemas, seed files
+├── hooks/                # Custom React hook utilities
+├── lib/                  # Shared helper logic (matching, geocoding, client config)
+├── public/               # Public assets and branding media
+├── scripts/              # Automation and maintenance tasks
+└── package.json          # Main package configuration
 ```
 
 ---
 
-## Frontend
-
-Recommended frontend:
-
-```txt
-React + Vite
-Tailwind CSS
-React Router
-Axios / TanStack Query
-React Hook Form
-Zod
-```
-
-Main frontend pages:
-
-```txt
-/
-├── Landing Page
-├── Login
-├── Register
-├── Donor Dashboard
-├── NGO Dashboard
-├── Admin Dashboard
-├── Create Donation
-├── Donation Details
-├── Active Pickups
-├── Impact Report
-└── Profile Settings
-```
-
----
-
-## Backend
-
-Recommended backend:
-
-```txt
-Node.js
-Express.js
-PostgreSQL
-Prisma or node-postgres
-JWT authentication
-Multer / Cloudinary for image uploads
-Google Maps API for distance calculation
-```
-
-Main backend modules:
-
-```txt
-server/
-├── src/
-│   ├── config/
-│   ├── controllers/
-│   ├── middlewares/
-│   ├── routes/
-│   ├── services/
-│   ├── utils/
-│   ├── validators/
-│   └── app.js
-└── package.json
-```
-
----
-
-## Database Tables
-
-Suggested main tables:
-
-```txt
-users
-donor_profiles
-receiver_profiles
-donations
-donation_images
-pickup_assignments
-delivery_confirmations
-impact_reports
-notifications
-user_verifications
-admin_actions
-```
-
----
-
-## Main Database Entities
-
-### users
-
-Stores login and role information.
-
-Roles:
-
-```txt
-donor
-receiver
-admin
-delivery_partner
-```
-
-### donor_profiles
-
-Stores donor business details.
-
-Fields:
-
-```txt
-business_name
-business_type
-phone_number
-address
-latitude
-longitude
-food_license_number
-verification_status
-```
-
-### receiver_profiles
-
-Stores NGO or receiver organization details.
-
-Fields:
-
-```txt
-organization_name
-organization_type
-service_area
-storage_capability
-phone_number
-address
-latitude
-longitude
-verification_status
-```
-
-### donations
-
-Stores donation details.
-
-Fields:
-
-```txt
-donor_id
-title
-food_type
-category
-quantity
-veg_status
-food_condition
-preparation_time
-expiry_time
-pickup_address
-status
-```
-
-Donation statuses:
-
-```txt
-available
-pending_acceptance
-accepted
-pickup_assigned
-picked_up
-delivered
-expired
-cancelled
-rejected
-unsafe
-```
-
-### pickup_assignments
-
-Stores pickup details.
-
-Fields:
-
-```txt
-donation_id
-receiver_id
-pickup_type
-assigned_to
-pickup_status
-pickup_time
-otp_code
-```
-
-### impact_reports
-
-Stores donation impact.
-
-Fields:
-
-```txt
-donation_id
-meals_saved
-food_waste_reduced_kg
-co2_impact_kg
-receiver_confirmed
-donor_report_generated
-```
-
----
-
-## API Routes
-
-### Auth Routes
-
-```txt
-POST /api/auth/register
-POST /api/auth/login
-GET  /api/auth/me
-POST /api/auth/logout
-```
-
-### Donor Routes
-
-```txt
-POST /api/donors/profile
-GET  /api/donors/profile
-PUT  /api/donors/profile
-GET  /api/donors/donations
-```
-
-### Receiver Routes
-
-```txt
-POST /api/receivers/profile
-GET  /api/receivers/profile
-PUT  /api/receivers/profile
-GET  /api/receivers/nearby-donations
-```
-
-### Donation Routes
-
-```txt
-POST /api/donations
-GET  /api/donations
-GET  /api/donations/:id
-PUT  /api/donations/:id
-DELETE /api/donations/:id
-POST /api/donations/:id/accept
-POST /api/donations/:id/reject
-POST /api/donations/:id/expire
-```
-
-### Pickup Routes
-
-```txt
-POST /api/pickups/:donationId/assign
-POST /api/pickups/:pickupId/verify
-POST /api/pickups/:pickupId/complete
-```
-
-### Delivery Routes
-
-```txt
-POST /api/deliveries/:pickupId/confirm
-```
-
-### Admin Routes
-
-```txt
-GET  /api/admin/users
-POST /api/admin/users/:id/verify
-GET  /api/admin/donations
-GET  /api/admin/reports
-POST /api/admin/donations/:id/manual-assign
-```
-
----
-
-## Matching Algorithm V1
-
-Simple version:
-
-```js
-function matchDonation(donation, receivers) {
-  return receivers
-    .filter(receiver => receiver.verificationStatus === "verified")
-    .filter(receiver => receiver.canAcceptFoodType(donation.foodType))
-    .filter(receiver => receiver.hasCapacityFor(donation.quantity))
-    .map(receiver => ({
-      receiver,
-      distance: calculateDistance(donation.location, receiver.location),
-      urgencyScore: calculateUrgency(donation.expiryTime),
-    }))
-    .sort((a, b) => a.distance - b.distance);
-}
-```
-
-V1 should prioritize nearest verified receivers first.
-
----
-
-## Brand Colors
-
-```txt
-Primary Green:      #2E7D32
-Deep Trust Green:   #1B5E20
-Fresh Mint:         #E8F5E9
-Warm Food Orange:   #F59E0B
-Soft Cream:         #FFF8E1
-Light Background:   #FAFAF7
-Charcoal Text:      #263238
-Success Green:      #43A047
-Warning Amber:      #F9A825
-Error Red:          #D32F2F
-```
-
-Recommended usage:
-
-```txt
-70% White / Cream
-20% Green
-10% Orange
-```
-
----
-
-## Setup Instructions
-
-### 1. Clone the repo
-
+## Local Development Setup
+
+### Prerequisite Services
+1. **Supabase / Neon DB:** A PostgreSQL instance with the extensions postgis, uuid-ossp, and pg_trgm active.
+2. **Clerk Auth:** An active project with email authentication enabled.
+3. **Google Maps API Key:** For the frontend map search and interactive distance displays.
+
+### 1. Installation
+Clone the repository and install the dependencies:
 ```bash
-git clone https://github.com/rdc28/mealsaver.git
-cd mealsaver
-```
-
-### 2. Install root dependencies
-
-```bash
+git clone https://github.com/RDC28/meal-saver.git
+cd meal-saver
 npm install
 ```
 
-### 3. Install client dependencies
+### 2. Database Migration & Schema Setup
+Execute the SQL scripts in the following order inside your Supabase SQL Editor:
+1. `database/schema.sql` (Tables, Triggers, and Enums)
+2. `database/rls_policies.sql` (Security Rules)
+3. `database/functions.sql` (Spatial Matching, OTP Generation, and Impact Triggers)
+4. `database/seed.sql` (Optional: Load mock testing profiles and logs)
 
-```bash
-cd client
-npm install
-```
-
-### 4. Install server dependencies
-
-```bash
-cd ../server
-npm install
-```
-
-### 5. Create environment file
-
-Create a `.env` file inside `server/`.
-
+### 3. Environment Configuration
+Create a `.env.local` file in your root folder:
 ```env
-PORT=5000
+# Clerk Authentication Configuration
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_pub_key
+CLERK_SECRET_KEY=your_clerk_secret_key
+
+# Supabase API Settings
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_public_key
+SUPABASE_SERVICE_ROLE_KEY=your_secret_service_role_key
+
+# Database Connection (for Drizzle migrations)
 DATABASE_URL=postgresql://postgres:password@localhost:5432/mealsaver
-JWT_SECRET=your_jwt_secret
-CLIENT_URL=http://localhost:5173
 
-GOOGLE_MAPS_API_KEY=your_google_maps_api_key
-CLOUDINARY_CLOUD_NAME=your_cloudinary_name
-CLOUDINARY_API_KEY=your_cloudinary_key
-CLOUDINARY_API_SECRET=your_cloudinary_secret
+# Map Integration
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_key
 ```
 
-### 6. Start PostgreSQL
-
-Create a local PostgreSQL database:
-
+### 4. Running the Development Server
+Launch the compiler and live-reload system:
 ```bash
-createdb mealsaver
-```
-
-### 7. Run server
-
-```bash
-cd server
 npm run dev
 ```
-
-### 8. Run client
-
-```bash
-cd client
-npm run dev
-```
+Open `http://localhost:3000` in your browser to view the application.
 
 ---
 
-## Development Scripts
-
-Root scripts can be configured like this:
-
-```json
-{
-  "scripts": {
-    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
-    "client": "npm run dev --prefix client",
-    "server": "npm run dev --prefix server"
-  }
-}
-```
-
----
-
-## MVP Development Roadmap
-
-### Phase 1: Foundation
-
-* Project setup
-* Database schema
-* Authentication
-* User roles
-* Donor profile
-* Receiver profile
-* Admin login
-
-### Phase 2: Donation Flow
-
-* Create donation
-* Upload food image
-* List available donations
-* Accept / reject donation
-* Donation status tracking
-
-### Phase 3: Matching System
-
-* Location storage
-* Nearby receiver matching
-* Urgency calculation
-* Receiver notification
-
-### Phase 4: Pickup & Delivery
-
-* Pickup assignment
-* Pickup verification
-* OTP verification
-* Delivery confirmation
-
-### Phase 5: Admin & Impact
-
-* Admin dashboard
-* User verification
-* Manual assignment
-* Impact report
-* Donation history
-
-### Phase 6: Future Features
-
-* AI freshness prediction
-* Route optimization
-* Cold chain partner support
-* CSR dashboard
-* Carbon credit estimation
-* Mobile app / PWA
-
----
-
-## Future Mobile App Plan
-
-MealSaver can start as a responsive PERN web app and later become a mobile app.
-
-Recommended path:
-
-```txt
-PERN Web App
-        ↓
-Responsive PWA
-        ↓
-React Native / Expo Mobile App
-```
-
-The backend API and PostgreSQL database can remain the same.
-
----
-
-## Important Product Rules
-
-* MealSaver should not store food in the first version.
-* Only verified NGOs and receivers should accept donations.
-* Cooked food should be time-sensitive and expire quickly.
-* Unsafe or expired food should not be redistributed.
-* NGO payment should not be the main model.
-* CSR sponsorship and donor convenience fees are better revenue options.
-* Admin control is necessary in the MVP.
-* Manual operations are acceptable in the early stage.
-
----
-
-## One-Line Pitch
-
-MealSaver helps food businesses rescue surplus food by connecting them with verified NGOs through fast pickup, safe delivery, and measurable impact tracking.
+## Contributors
+![Contributors Graph](https://contrib.rocks/image?repo=RDC28/meal-saver)
 
 ---
 
 ## License
-
-This project is currently private and under development.
+Distributed under the MIT License. See `LICENSE` for more information.

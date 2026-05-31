@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "update-contributors": "node scripts/update-contributors.js"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.4.1",

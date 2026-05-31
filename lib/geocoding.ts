@@ -6,10 +6,52 @@
 // Both speak the same response shape, so the call site doesn't change.
 // ─────────────────────────────────────────────────────────────
 
+// Structured pieces parsed from the upstream address object — used to
+// auto-fill form fields (street address, city, etc.) when a user picks a spot.
+export type GeocodeAddress = {
+  street?: string
+  city?: string
+  state?: string
+  postcode?: string
+  country?: string
+}
+
 export type GeocodeResult = {
   lat: number
   lng: number
   display_name: string
+  address?: GeocodeAddress
+}
+
+// Nominatim's address object spreads the locality across several keys
+// depending on the place — collapse them into a predictable shape.
+type NominatimAddress = {
+  house_number?: string
+  road?: string
+  neighbourhood?: string
+  suburb?: string
+  village?: string
+  town?: string
+  city?: string
+  municipality?: string
+  county?: string
+  state_district?: string
+  state?: string
+  postcode?: string
+  country?: string
+}
+
+function normalizeAddress(a?: NominatimAddress): GeocodeAddress | undefined {
+  if (!a) return undefined
+  const street = [a.house_number, a.road].filter(Boolean).join(' ').trim() || undefined
+  const city = a.city || a.town || a.village || a.municipality || a.suburb || a.county || undefined
+  return {
+    street: street ?? a.neighbourhood ?? a.suburb,
+    city,
+    state: a.state,
+    postcode: a.postcode,
+    country: a.country,
+  }
 }
 
 const NOMINATIM_BASE = process.env.NEXT_PUBLIC_NOMINATIM_BASE_URL || 'https://nominatim.openstreetmap.org'
@@ -37,22 +79,23 @@ export async function searchAddress(query: string, limit = 5): Promise<GeocodeRe
   const q = query.trim()
   if (!q) return []
 
-  type NominatimHit = { lat: string; lon: string; display_name: string }
+  type NominatimHit = { lat: string; lon: string; display_name: string; address?: NominatimAddress }
   const hits = await fetchJson<NominatimHit[]>(
-    endpoint('/search', { q, limit: String(limit), countrycodes: 'in', addressdetails: '0' })
+    endpoint('/search', { q, limit: String(limit), countrycodes: 'in', addressdetails: '1' })
   )
 
   return hits.map(h => ({
     lat: parseFloat(h.lat),
     lng: parseFloat(h.lon),
     display_name: h.display_name,
+    address: normalizeAddress(h.address),
   }))
 }
 
 export async function reverseGeocode(lat: number, lng: number): Promise<GeocodeResult | null> {
-  type NominatimReverse = { lat: string; lon: string; display_name: string; error?: string }
+  type NominatimReverse = { lat: string; lon: string; display_name: string; address?: NominatimAddress; error?: string }
   const hit = await fetchJson<NominatimReverse>(
-    endpoint('/reverse', { lat: String(lat), lon: String(lng) })
+    endpoint('/reverse', { lat: String(lat), lon: String(lng), addressdetails: '1' })
   )
   if (hit.error || !hit.lat) return null
 
@@ -60,5 +103,6 @@ export async function reverseGeocode(lat: number, lng: number): Promise<GeocodeR
     lat: parseFloat(hit.lat),
     lng: parseFloat(hit.lon),
     display_name: hit.display_name,
+    address: normalizeAddress(hit.address),
   }
 }

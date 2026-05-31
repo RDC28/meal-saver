@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { auth } from '@clerk/nextjs/server'
 import { ArrowLeft } from 'lucide-react'
 import { SignIn } from '@clerk/nextjs'
 import { Logo } from '@/components/mealsaver/logo'
@@ -15,6 +17,14 @@ export default async function LoginCatchAll({
   const params = await searchParams
   const selectedRole = params.role === 'receiver' ? 'receiver' : 'donor'
   const redirectUrl = `/api/auth/redirect?role=${selectedRole}`
+
+  // If a session already exists, never render <SignIn/> — Clerk refuses to draw
+  // the form when signed in, which leaves a blank, stuck page (e.g. a stale
+  // session pointing at a deleted user). Resolve it server-side instead: the
+  // redirect handler sends valid sessions to their dashboard and unknown ones
+  // on to /register, so this page can never hang.
+  const { userId } = await auth()
+  if (userId) redirect(redirectUrl)
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">

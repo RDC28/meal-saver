@@ -15,6 +15,7 @@ const isPublicRoute = createRouteMatcher([
   '/donor/register',
   '/ngo/register',
   '/api/auth/signup',
+  '/api/geocode',
   '/api/cron/(.*)',
 ])
 
