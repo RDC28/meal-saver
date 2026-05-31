@@ -120,7 +120,7 @@ export default function NGORegisterPage() {
       const { signupRes, signupJson } = await submitSignup()
       if (!signupRes.ok) {
         if (signupJson?.error?.code === 'EMAIL_EXISTS_SIGN_IN_REQUIRED') {
-          if (fetchStatus === 'fetching') {
+          if (fetchStatus === 'fetching' || !signIn) {
             setError('Authentication is still loading. Please try again in a moment.')
             return
           }
@@ -148,7 +148,11 @@ export default function NGORegisterPage() {
               return
             }
 
-            setEmailSent(true)
+            // finalize() above signed us in as this account and the NGO role is
+            // now active — go straight to the dashboard. Showing the "log in"
+            // screen here would send an already-active session to /login, which
+            // bounces it onto the donor dashboard (the reported bug).
+            window.location.href = '/api/auth/redirect?role=receiver'
             return
           } catch {
             setError('This email already exists. Enter the correct password to add NGO role.')

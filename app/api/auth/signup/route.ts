@@ -246,17 +246,24 @@ export async function POST(req: Request) {
     const { profile, alreadyExists } = profileResult
 
     if (usingExistingAccount) {
+      // Promote the account's current role to the one just registered, so the
+      // post-signup redirect — and any later bare /login — resolve to the new
+      // role's dashboard instead of the original one. Without this, adding an
+      // NGO role to a donor account left role='donor', so the user kept landing
+      // on the donor dashboard.
+      accountRole = payload.role
       await db
         .update(users)
         .set({
           full_name: payload.full_name,
           phone: normalizedPhone,
+          role: payload.role,
         })
         .where(eq(users.id, accountId))
 
       if (clerkUserId) {
         await clerk.users
-          .updateUser(clerkUserId, { publicMetadata: { role: accountRole } })
+          .updateUser(clerkUserId, { publicMetadata: { role: payload.role } })
           .catch(() => null)
       }
     }

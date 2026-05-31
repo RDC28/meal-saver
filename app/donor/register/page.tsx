@@ -100,7 +100,7 @@ export default function DonorRegisterPage() {
       const { signupRes, signupJson } = await submitSignup()
       if (!signupRes.ok) {
         if (signupJson?.error?.code === 'EMAIL_EXISTS_SIGN_IN_REQUIRED') {
-          if (fetchStatus === 'fetching') {
+          if (fetchStatus === 'fetching' || !signIn) {
             setError('Authentication is still loading. Please try again in a moment.')
             return
           }
@@ -128,7 +128,11 @@ export default function DonorRegisterPage() {
               return
             }
 
-            setEmailSent(true)
+            // finalize() above signed us in as this account and the donor role
+            // is now active — go straight to the dashboard. Showing the "log in"
+            // screen here would send an already-active session to /login, which
+            // bounces it onto the wrong dashboard (the reported bug).
+            window.location.href = '/api/auth/redirect?role=donor'
             return
           } catch {
             setError('This email already exists. Enter the correct password to add donor role.')

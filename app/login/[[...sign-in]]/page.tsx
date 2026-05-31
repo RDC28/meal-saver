@@ -23,8 +23,13 @@ export default async function LoginCatchAll({
   // session pointing at a deleted user). Resolve it server-side instead: the
   // redirect handler sends valid sessions to their dashboard and unknown ones
   // on to /register, so this page can never hang.
+  //
+  // Only forward the role when it was explicitly chosen via the tab. For a bare
+  // /login hit we must NOT inherit the "donor" default — a user who holds both
+  // roles would otherwise always be bounced to the donor dashboard. Let the
+  // redirect handler use their stored role instead.
   const { userId } = await auth()
-  if (userId) redirect(redirectUrl)
+  if (userId) redirect(params.role ? redirectUrl : '/api/auth/redirect')
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-12">
