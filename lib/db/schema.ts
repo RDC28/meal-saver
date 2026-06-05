@@ -124,7 +124,7 @@ export const users = pgTable('users', {
   avatar_url: text('avatar_url'),
   role:       userRoleEnum('role').notNull().default('donor'),
   is_active:  boolean('is_active').notNull().default(true),
-  clerk_id:   text('clerk_id').unique(),
+  password_hash: text('password_hash'),
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })

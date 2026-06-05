@@ -1,23 +1,32 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { RATE_LIMIT } from '@/lib/constants'
+import { verifyJWT } from '@/lib/auth/jwt'
+import { SESSION_COOKIE } from '@/lib/auth/session'
 
 // ── Public routes — never require authentication
-const isPublicRoute = createRouteMatcher([
+const publicRoutes = [
   '/',
   '/how-it-works',
   '/for-donors',
   '/for-ngos',
   '/impact-overview',
-  '/login(.*)',
+  '/login',
   '/register',
   '/donor/register',
   '/ngo/register',
   '/api/auth/signup',
+  '/api/auth/login',
+  '/api/auth/logout',
   '/api/geocode',
-  '/api/cron/(.*)',
-])
+]
+
+function isPublicRoute(pathname: string) {
+  if (publicRoutes.includes(pathname)) return true
+  if (pathname.startsWith('/login/')) return true
+  if (pathname.startsWith('/api/cron/')) return true
+  return false
+}
 
 // ─────────────────────────────────────────────────────────────
 // In-memory sliding-window rate limiter.
@@ -50,9 +59,9 @@ function tooManyRequests(): NextResponse {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Proxy — Clerk auth + rate limiting
+// Middleware — Custom Auth + rate limiting
 // ─────────────────────────────────────────────────────────────
-export default clerkMiddleware(async (auth, request) => {
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const method = request.method
   const ip     = getIp(request)
@@ -60,6 +69,20 @@ export default clerkMiddleware(async (auth, request) => {
   // Rate limit: POST /api/auth/signup
   if (pathname === '/api/auth/signup' && method === 'POST') {
     if (isRateLimited(`signup:${ip}`, RATE_LIMIT.SIGNUP.limit, RATE_LIMIT.SIGNUP.windowMs)) {
+      return tooManyRequests()
+    }
+  }
+
+  // Rate limit: POST /api/auth/login
+  if (pathname === '/api/auth/login' && method === 'POST') {
+    if (isRateLimited(`login:${ip}`, RATE_LIMIT.SIGNUP.limit, RATE_LIMIT.SIGNUP.windowMs)) {
+      return tooManyRequests()
+    }
+  }
+
+  // Rate limit: GET /api/geocode (public map search/reverse lookup)
+  if (pathname === '/api/geocode' && method === 'GET') {
+    if (isRateLimited(`geocode:${ip}`, RATE_LIMIT.GEOCODE.limit, RATE_LIMIT.GEOCODE.windowMs)) {
       return tooManyRequests()
     }
   }
@@ -78,14 +101,27 @@ export default clerkMiddleware(async (auth, request) => {
     }
   }
 
-  // Clerk auth guard
-  if (!isPublicRoute(request)) {
-    await auth.protect()
+  // Auth guard
+  if (!isPublicRoute(pathname)) {
+    const token = request.cookies.get(SESSION_COOKIE)?.value
+    let payload = null
+    if (token) {
+      payload = await verifyJWT(token)
+    }
+
+    if (!payload || !payload.userId) {
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
   }
-})
+
+  return NextResponse.next()
+}
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    '/((?!_next|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 }

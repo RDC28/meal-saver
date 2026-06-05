@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { PlusCircle, MoreVertical, BarChart2 } from 'lucide-react'
-import { auth } from '@clerk/nextjs/server'
+import { getSessionPayload } from '@/lib/auth/session'
 import { db, donations, users, donor_profiles, impact_reports } from '@/lib/db'
 import { eq, desc, inArray, count, sum, and } from 'drizzle-orm'
 import { DashboardSidebar } from '@/components/mealsaver/dashboard-sidebar'
@@ -27,7 +27,8 @@ function formatTimeWindow(dt: Date | null): string {
 }
 
 export default async function DonorDashboardPage() {
-  const { userId } = await auth()
+  const session = await getSessionPayload()
+  const userId = session?.userId
 
   let businessName = 'there'
   let recentDonations: {
@@ -44,7 +45,7 @@ export default async function DonorDashboardPage() {
   let wasteReduced = 0
 
   if (userId) {
-    const [user] = await db.select().from(users).where(eq(users.clerk_id, userId))
+    const [user] = await db.select().from(users).where(eq(users.id, userId as string))
 
     if (user) {
       const [donorProfile] = await db

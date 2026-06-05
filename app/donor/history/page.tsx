@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { BarChart2, CheckCircle2, UtensilsCrossed, Leaf } from 'lucide-react'
-import { auth } from '@clerk/nextjs/server'
+import { getSessionPayload } from '@/lib/auth/session'
 import { db, donations, users, impact_reports, pickup_assignments, receiver_profiles } from '@/lib/db'
 import { eq, inArray, desc, sum, and } from 'drizzle-orm'
 import { DashboardSidebar } from '@/components/mealsaver/dashboard-sidebar'
@@ -26,7 +26,8 @@ function formatRelativeDate(date: Date): string {
 }
 
 export default async function DonorHistoryPage() {
-  const { userId } = await auth()
+  const session = await getSessionPayload()
+  const userId = session?.userId
 
   let history: {
     id: string
@@ -44,7 +45,7 @@ export default async function DonorHistoryPage() {
   let totalExpired = 0
 
   if (userId) {
-    const [user] = await db.select().from(users).where(eq(users.clerk_id, userId))
+    const [user] = await db.select().from(users).where(eq(users.id, userId as string))
 
     if (user) {
       const [historyRows, impactAgg] = await Promise.all([

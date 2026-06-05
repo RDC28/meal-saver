@@ -1,4 +1,6 @@
-import { clerkClient } from '@clerk/nextjs/server'
+import * as bcrypt from 'bcrypt'
+import { eq } from 'drizzle-orm'
+import { db, users } from '@/lib/db'
 import { withAuth } from '@/lib/api/auth-guard'
 import { validateBody, z } from '@/lib/api/validate'
 import { ok, err, serverError } from '@/lib/api/response'
@@ -18,29 +20,23 @@ export const PUT = withAuth(async (req: NextRequest, { profile }) => {
   const { data, error } = await validateBody(req, schema)
   if (error) return error
 
-  if (!profile.clerk_id) {
-    return err('No Clerk account linked to this user.', 400, 'NO_CLERK_ID')
-  }
-
   try {
-    const clerk = await clerkClient()
-    try {
-      await clerk.users.verifyPassword({
-        userId:   profile.clerk_id,
-        password: data.current_password,
-      })
-    } catch {
+    const isPasswordValid = await bcrypt.compare(data.current_password, profile.password_hash ?? '')
+    
+    if (!isPasswordValid) {
       return err('Current password is incorrect.', 403, 'INVALID_CURRENT_PASSWORD')
     }
 
-    await clerk.users.updateUser(profile.clerk_id, {
-      password: data.new_password,
-    })
+    const hashedNewPassword = await bcrypt.hash(data.new_password, 10)
+
+    await db
+      .update(users)
+      .set({ password_hash: hashedNewPassword })
+      .where(eq(users.id, profile.id))
+
     return ok({ message: 'Password updated successfully.' })
   } catch (e: unknown) {
-    const clerkError = e as { errors?: { message?: string }[] }
-    const message = clerkError?.errors?.[0]?.message ?? 'Failed to update password'
     console.error('[PUT /api/auth/change-password]', e)
-    return serverError(message)
+    return serverError('Failed to update password')
   }
 })

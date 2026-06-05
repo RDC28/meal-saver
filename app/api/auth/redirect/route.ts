@@ -1,6 +1,6 @@
-import { auth } from '@clerk/nextjs/server'
 import { eq } from 'drizzle-orm'
 import { redirect } from 'next/navigation'
+import { getSessionPayload } from '@/lib/auth/session'
 
 const roleDestination: Record<string, string> = {
   donor:            '/donor/dashboard',
@@ -10,9 +10,9 @@ const roleDestination: Record<string, string> = {
 }
 
 export async function GET(req: Request) {
-  const { userId: clerkId } = await auth()
-
-  if (!clerkId) redirect('/login')
+  const session = await getSessionPayload()
+  
+  if (!session || !session.userId) redirect('/login')
 
   // Allow local UI work even when DB is not configured.
   if (!process.env.DATABASE_URL) redirect('/')
@@ -22,7 +22,7 @@ export async function GET(req: Request) {
   const [profile] = await db
     .select({ id: users.id, role: users.role })
     .from(users)
-    .where(eq(users.clerk_id, clerkId))
+    .where(eq(users.id, session.userId as string))
 
   if (!profile) redirect('/register')
 

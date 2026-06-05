@@ -1,8 +1,9 @@
-import { auth, clerkClient } from '@clerk/nextjs/server'
 import { eq } from 'drizzle-orm'
+import * as bcrypt from 'bcrypt'
 import { db, users, donor_profiles, receiver_profiles } from '@/lib/db'
 import { validateBody, z } from '@/lib/api/validate'
 import { created, err, ok, serverError } from '@/lib/api/response'
+import { setSessionCookie } from '@/lib/auth/session'
 
 const signupSchema = z.object({
   email: z
@@ -63,7 +64,6 @@ export async function POST(req: Request) {
     if (error || !data) return error ?? err('Invalid request body', 400, 'INVALID_BODY')
     const payload = data
 
-    const clerk = await clerkClient()
     const normalizedEmail = payload.email.trim().toLowerCase()
     const normalizedPhone = payload.phone ?? null
 
@@ -161,62 +161,26 @@ export async function POST(req: Request) {
         : ensureReceiverProfile(userId)
     }
 
-    let clerkUserId: string | null = null
     let accountId: string | null = null
     let accountRole: 'donor' | 'receiver' | 'admin' | 'delivery_partner' = payload.role
     let usingExistingAccount = false
 
-    try {
-      const clerkUser = await clerk.users.createUser({
-        emailAddress: [normalizedEmail],
-        password: data.password,
-        firstName: payload.full_name.split(' ')[0],
-        lastName: payload.full_name.split(' ').slice(1).join(' ') || undefined,
-        publicMetadata: { role: payload.role },
-      })
-      clerkUserId = clerkUser.id
-    } catch (clerkErr: unknown) {
-      const clerkError = clerkErr as { errors?: { code?: string; message?: string }[] }
-      const code = clerkError?.errors?.[0]?.code ?? ''
+    const [existingUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, normalizedEmail))
 
-      if (code === 'form_identifier_exists' || code === 'user_already_exists') {
-        const { userId: signedInClerkId } = await auth()
-        if (!signedInClerkId) {
-          return err(
-            'This email already exists. Sign in first, then register the second role.',
-            409,
-            'EMAIL_EXISTS_SIGN_IN_REQUIRED'
-          )
-        }
-
-        const [existingUser] = await db
-          .select()
-          .from(users)
-          .where(eq(users.clerk_id, signedInClerkId))
-
-        if (!existingUser) {
-          return err('Account setup incomplete. Please sign up again.', 401, 'ACCOUNT_INCOMPLETE')
-        }
-
-        if (existingUser.email.toLowerCase() !== normalizedEmail) {
-          return err(
-            'You are signed in with a different email. Use the same email account to add another role.',
-            403,
-            'EMAIL_MISMATCH'
-          )
-        }
-
-        usingExistingAccount = true
-        accountId = existingUser.id
-        accountRole = existingUser.role
-        clerkUserId = existingUser.clerk_id ?? signedInClerkId
-      } else {
-        const message = clerkError?.errors?.[0]?.message ?? 'Failed to create account'
-        return err(message, 400, 'AUTH_ERROR')
+    if (existingUser) {
+      // User exists, check password to allow adding a new role profile
+      const isPasswordValid = await bcrypt.compare(payload.password, existingUser.password_hash ?? '')
+      if (!isPasswordValid) {
+        return err('This email already exists. Enter the correct password to add another role.', 401, 'INVALID_PASSWORD')
       }
-    }
-
-    if (!usingExistingAccount) {
+      usingExistingAccount = true
+      accountId = existingUser.id
+      accountRole = existingUser.role
+    } else {
+      const hashedPassword = await bcrypt.hash(payload.password, 10)
       const [newUser] = await db
         .insert(users)
         .values({
@@ -224,13 +188,12 @@ export async function POST(req: Request) {
           full_name: payload.full_name,
           phone: normalizedPhone,
           role: payload.role,
-          clerk_id: clerkUserId,
+          password_hash: hashedPassword,
           is_active: true,
         })
         .returning()
 
       if (!newUser) {
-        if (clerkUserId) await clerk.users.deleteUser(clerkUserId).catch(() => null)
         return serverError('Account creation failed')
       }
 
@@ -260,13 +223,10 @@ export async function POST(req: Request) {
           role: payload.role,
         })
         .where(eq(users.id, accountId))
-
-      if (clerkUserId) {
-        await clerk.users
-          .updateUser(clerkUserId, { publicMetadata: { role: payload.role } })
-          .catch(() => null)
-      }
     }
+
+    // Set JWT Session Cookie
+    await setSessionCookie({ userId: accountId, role: accountRole })
 
     const responseData = {
       user: {

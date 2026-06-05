@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { useSignIn } from '@clerk/nextjs'
+import { useAuth } from '@/components/providers/auth-provider'
 import { Eye, EyeOff, UserCircle2, CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
 import { Logo } from '@/components/mealsaver/logo'
 import { LocationPicker, type LocationValue } from '@/components/mealsaver/location-picker'
@@ -34,7 +34,7 @@ const INITIAL: FormState = {
 }
 
 export default function DonorRegisterPage() {
-  const { signIn, fetchStatus } = useSignIn()
+  const { refreshUser } = useAuth()
 
   const [form, setForm] = useState<FormState>(INITIAL)
   const [location, setLocation] = useState<LocationValue | null>(null)
@@ -99,50 +99,11 @@ export default function DonorRegisterPage() {
       // ── Create account + profile in one request
       const { signupRes, signupJson } = await submitSignup()
       if (!signupRes.ok) {
-        if (signupJson?.error?.code === 'EMAIL_EXISTS_SIGN_IN_REQUIRED') {
-          if (fetchStatus === 'fetching' || !signIn) {
-            setError('Authentication is still loading. Please try again in a moment.')
-            return
-          }
-
-          try {
-            const signInResult = await signIn.password({
-              identifier: payload.email,
-              password: payload.password,
-            })
-
-            if (signInResult.error) {
-              setError('Could not verify your existing account. Please log in and try again.')
-              return
-            }
-
-            const finalizeResult = await signIn.finalize()
-            if (finalizeResult.error) {
-              setError('Could not verify your existing account. Please log in and try again.')
-              return
-            }
-
-            const retry = await submitSignup()
-            if (!retry.signupRes.ok) {
-              setError(retry.signupJson?.error?.message ?? `Signup failed (${retry.signupRes.status})`)
-              return
-            }
-
-            // finalize() above signed us in as this account and the donor role
-            // is now active — go straight to the dashboard. Showing the "log in"
-            // screen here would send an already-active session to /login, which
-            // bounces it onto the wrong dashboard (the reported bug).
-            window.location.href = '/api/auth/redirect?role=donor'
-            return
-          } catch {
-            setError('This email already exists. Enter the correct password to add donor role.')
-            return
-          }
-        }
-
         setError(signupJson?.error?.message ?? `Signup failed (${signupRes.status})`)
         return
       }
+
+      await refreshUser()
 
       // ── Success — prompt login (Clerk requires a sign-in after server-side user creation)
       setEmailSent(true)

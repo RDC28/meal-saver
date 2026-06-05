@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Clock, MapPin, Phone, Package } from 'lucide-react'
-import { auth } from '@clerk/nextjs/server'
+import { getSessionPayload } from '@/lib/auth/session'
 import { db, users, pickup_assignments, donations } from '@/lib/db'
 import { eq, and, inArray } from 'drizzle-orm'
 import { DashboardSidebar } from '@/components/mealsaver/dashboard-sidebar'
@@ -19,10 +19,11 @@ function formatPickupTime(date: Date | null): string {
 }
 
 export default async function NGOPickupsPage() {
-  const { userId } = await auth()
+  const session = await getSessionPayload()
+  const userId = session?.userId
   if (!userId) redirect('/login')
 
-  const [user] = await db.select().from(users).where(eq(users.clerk_id, userId))
+  const [user] = await db.select().from(users).where(eq(users.id, userId as string))
   if (!user) redirect('/login')
 
   const activePickups = await db

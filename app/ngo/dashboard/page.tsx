@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { RefreshCw, Clock, MapPin, Heart } from 'lucide-react'
-import { auth } from '@clerk/nextjs/server'
+import { getSessionPayload } from '@/lib/auth/session'
 import { db, users, receiver_profiles, donations, pickup_assignments, impact_reports } from '@/lib/db'
 import { eq, and, ilike, sql, count, sum } from 'drizzle-orm'
 import { DashboardSidebar } from '@/components/mealsaver/dashboard-sidebar'
@@ -35,10 +35,11 @@ function formatTime(date: Date | null): string {
 }
 
 export default async function NGODashboardPage() {
-  const { userId } = await auth()
+  const session = await getSessionPayload()
+  const userId = session?.userId
   if (!userId) redirect('/login')
 
-  const [user] = await db.select().from(users).where(eq(users.clerk_id, userId))
+  const [user] = await db.select().from(users).where(eq(users.id, userId as string))
   if (!user) redirect('/login')
 
   const [receiverProfile] = await db

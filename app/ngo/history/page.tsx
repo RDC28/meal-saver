@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { BarChart2, UtensilsCrossed, CheckCircle2, Leaf } from 'lucide-react'
-import { auth } from '@clerk/nextjs/server'
+import { getSessionPayload } from '@/lib/auth/session'
 import { db, users, pickup_assignments, donations, impact_reports } from '@/lib/db'
 import { eq, and, inArray, desc, sum, count, countDistinct } from 'drizzle-orm'
 import { DashboardSidebar } from '@/components/mealsaver/dashboard-sidebar'
@@ -22,10 +22,11 @@ function formatRelativeDate(date: Date | null): string {
 }
 
 export default async function NGOHistoryPage() {
-  const { userId } = await auth()
+  const session = await getSessionPayload()
+  const userId = session?.userId
   if (!userId) redirect('/login')
 
-  const [user] = await db.select().from(users).where(eq(users.clerk_id, userId))
+  const [user] = await db.select().from(users).where(eq(users.id, userId as string))
   if (!user) redirect('/login')
 
   const [history, impactRows, [pickupCount], [donorCount]] = await Promise.all([

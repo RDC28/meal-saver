@@ -1,19 +1,18 @@
-import { auth } from '@clerk/nextjs/server'
 import { db, donor_profiles, receiver_profiles, users } from '@/lib/db'
 import { eq } from 'drizzle-orm'
 import { unauthorized, forbidden, serverError } from './response'
 import type { User, UserRole } from '@/lib/db'
 import type { NextRequest } from 'next/server'
+import { getSessionPayload } from '@/lib/auth/session'
 
 // ─────────────────────────────────────────────────────────────
 // Auth context injected into every protected handler
 // ─────────────────────────────────────────────────────────────
 export type AuthContext = {
   user: {
-    id: string       // our Neon UUID
-    clerkId: string  // Clerk's user_xxx ID
+    id: string
   }
-  profile: User     // row from public.users
+  profile: User
 }
 
 // Next.js App Router route context (contains params for dynamic routes)
@@ -28,18 +27,7 @@ export type ProtectedHandler<TCtx = RouteContext> = (
 ) => Promise<Response>
 
 // ─────────────────────────────────────────────────────────────
-// withAuth — wraps a route handler with Clerk auth + role check
-//
-// Usage (any logged-in user):
-//   export const GET = withAuth(async (req, { user, profile }) => { ... })
-//
-// Usage (specific roles only):
-//   export const POST = withAuth(async (req, { profile }) => { ... }, ['admin'])
-//
-// Usage (dynamic route with params):
-//   export const GET = withAuth(async (req, auth, ctx) => {
-//     const { id } = await ctx.params!
-//   })
+// withAuth — wraps a route handler with custom auth + role check
 // ─────────────────────────────────────────────────────────────
 export function withAuth<TCtx = RouteContext>(
   handler: ProtectedHandler<TCtx>,
@@ -47,16 +35,18 @@ export function withAuth<TCtx = RouteContext>(
 ) {
   return async (req: NextRequest, routeCtx: TCtx = {} as TCtx) => {
     try {
-      // 1. Get Clerk session
-      const { userId: clerkId } = await auth()
+      // 1. Get session payload
+      const session = await getSessionPayload()
 
-      if (!clerkId) return unauthorized()
+      if (!session || !session.userId) return unauthorized()
 
-      // 2. Load our user row via clerk_id
+      const userId = session.userId as string
+
+      // 2. Load our user row
       const [profile] = await db
         .select()
         .from(users)
-        .where(eq(users.clerk_id, clerkId))
+        .where(eq(users.id, userId))
 
       if (!profile) {
         return unauthorized('Account setup incomplete. Please sign up again or contact support.')
@@ -67,8 +57,7 @@ export function withAuth<TCtx = RouteContext>(
         return forbidden('Your account has been suspended. Contact support.')
       }
 
-      // 4. Role guard. Donor/receiver access follows profile existence so a
-      // dual-role account is not locked out when its active role changes.
+      // 4. Role guard
       if (allowedRoles && !(await hasAllowedRole(profile, allowedRoles))) {
         return forbidden(`This action requires one of: ${allowedRoles.join(', ')}`)
       }
@@ -76,7 +65,7 @@ export function withAuth<TCtx = RouteContext>(
       // 5. Call the actual handler
       return handler(
         req,
-        { user: { id: profile.id, clerkId }, profile },
+        { user: { id: profile.id }, profile },
         routeCtx
       )
     } catch (e) {

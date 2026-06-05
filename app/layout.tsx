@@ -1,10 +1,7 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
-import { ClerkProvider } from '@clerk/nextjs'
+import { AuthProvider } from '@/components/providers/auth-provider'
 import './globals.css'
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 
 export const metadata: Metadata = {
   title: 'MealSaver - Save Food. Feed People.',
@@ -34,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <ClerkProvider>
+    <AuthProvider>
       <html lang="en" className="bg-background">
         <head>
           <link
@@ -42,11 +39,11 @@ export default function RootLayout({
             rel="stylesheet"
           />
         </head>
-        <body className={`${inter.variable} font-sans antialiased bg-background`}>
+        <body className="font-sans antialiased bg-background">
           {children}
           {process.env.NODE_ENV === 'production' && <Analytics />}
         </body>
       </html>
-    </ClerkProvider>
+    </AuthProvider>
   )
 }

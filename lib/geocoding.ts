@@ -54,7 +54,7 @@ function normalizeAddress(a?: NominatimAddress): GeocodeAddress | undefined {
   }
 }
 
-const NOMINATIM_BASE = process.env.NEXT_PUBLIC_NOMINATIM_BASE_URL || 'https://nominatim.openstreetmap.org'
+const NOMINATIM_BASE = process.env.NOMINATIM_BASE_URL || 'https://nominatim.openstreetmap.org'
 const LOCATIONIQ_KEY = process.env.LOCATIONIQ_API_KEY
 const USER_AGENT = process.env.NOMINATIM_USER_AGENT || 'MealSaver/0.1 (contact: admin@mealsaver.local)'
 
@@ -67,12 +67,19 @@ function endpoint(path: string, params: Record<string, string>): string {
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
-  const res = await fetch(url, {
-    headers: { 'User-Agent': USER_AGENT, 'Accept-Language': 'en' },
-    cache: 'no-store',
-  })
-  if (!res.ok) throw new Error(`Geocoding upstream failed: ${res.status}`)
-  return res.json() as Promise<T>
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': USER_AGENT, 'Accept-Language': 'en' },
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+    if (!res.ok) throw new Error(`Geocoding upstream failed: ${res.status}`)
+    return res.json() as Promise<T>
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 export async function searchAddress(query: string, limit = 5): Promise<GeocodeResult[]> {

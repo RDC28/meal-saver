@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import L from 'leaflet'
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet'
-import { Loader2, MapPin, Search } from 'lucide-react'
+import { AlertCircle, Loader2, MapPin, Search } from 'lucide-react'
 import type { GeocodeResult } from '@/lib/geocoding'
 
 export type LocationValue = {
@@ -79,6 +79,7 @@ export default function LocationPickerInner({
   const [results, setResults] = useState<GeocodeResult[]>([])
   const [searching, setSearching] = useState(false)
   const [reverseLoading, setReverseLoading] = useState(false)
+  const [mapError, setMapError] = useState<string | null>(null)
   const debounceRef = useRef<number | null>(null)
 
   useEffect(() => {
@@ -92,9 +93,12 @@ export default function LocationPickerInner({
       try {
         const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`)
         const json = await res.json()
+        if (!res.ok) throw new Error(json.error?.message ?? 'Search failed')
         setResults(json.data?.results ?? [])
+        setMapError(null)
       } catch {
         setResults([])
+        setMapError('Address search is unavailable right now. You can still click the map to set coordinates.')
       } finally {
         setSearching(false)
       }
@@ -111,6 +115,7 @@ export default function LocationPickerInner({
       try {
         const res = await fetch(`/api/geocode?lat=${lat}&lng=${lng}`)
         const json = await res.json()
+        if (!res.ok) throw new Error(json.error?.message ?? 'Lookup failed')
         const r = json.data?.result
         if (r) {
           onChange({
@@ -123,8 +128,10 @@ export default function LocationPickerInner({
             postcode: r.address?.postcode,
           })
         }
+        setMapError(null)
       } catch {
         // Reverse geocoding is best-effort — coords are still set.
+        setMapError('Address lookup failed, but the pinned coordinates were saved.')
       } finally {
         setReverseLoading(false)
       }
@@ -147,10 +154,17 @@ export default function LocationPickerInner({
   }
 
   const handleUseMyLocation = () => {
-    if (!('geolocation' in navigator)) return
+    if (!('geolocation' in navigator)) {
+      setMapError('Your browser does not support location detection. Search or click the map instead.')
+      return
+    }
+    setMapError(null)
     navigator.geolocation.getCurrentPosition(
       pos => updateCoordsAndReverse(pos.coords.latitude, pos.coords.longitude),
-      err => console.warn('[LocationPicker] geolocation denied', err),
+      err => {
+        console.warn('[LocationPicker] geolocation denied', err)
+        setMapError('Location access was blocked. Allow location access in the browser, or search/click the map.')
+      },
       { enableHighAccuracy: true, timeout: 8000 },
     )
   }
@@ -199,6 +213,10 @@ export default function LocationPickerInner({
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            eventHandlers={{
+              tileerror: () => setMapError('Map tiles could not load. Check your internet connection, then try again.'),
+              tileload: () => setMapError(null),
+            }}
           />
           <MapClickCapture onClick={updateCoordsAndReverse} />
           {value && (
@@ -220,6 +238,12 @@ export default function LocationPickerInner({
           )}
         </MapContainer>
       </div>
+      {mapError && (
+        <div className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/15 px-3 py-2 text-xs text-warning-foreground">
+          <AlertCircle size={13} className="mt-0.5 shrink-0" />
+          <span>{mapError}</span>
+        </div>
+      )}
 
       {/* Footer / selected address */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">

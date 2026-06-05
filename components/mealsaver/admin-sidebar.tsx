@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useClerk } from '@clerk/nextjs'
+import { useAuth } from '@/components/providers/auth-provider'
 import {
   LayoutDashboard, Users, ShieldCheck, Package,
   UserPlus, BarChart2, AlertTriangle, LogOut,
@@ -22,7 +22,7 @@ const adminNav = [
 export function AdminSidebar() {
   const pathname = usePathname()
   const router   = useRouter()
-  const { signOut } = useClerk()
+  const { logout } = useAuth()
 
   return (
     <aside className="flex h-full w-56 shrink-0 flex-col border-r border-border bg-card">
@@ -57,7 +57,7 @@ export function AdminSidebar() {
 
       <div className="border-t border-border px-5 py-4">
         <button
-          onClick={async () => { await signOut(); router.push('/login') }}
+          onClick={async () => { await logout() }}
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <LogOut size={14} strokeWidth={1.8} /> Sign Out

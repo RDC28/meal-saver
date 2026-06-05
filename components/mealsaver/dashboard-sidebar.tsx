@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useClerk, useUser } from '@clerk/nextjs'
+import { useAuth } from '@/components/providers/auth-provider'
 import {
   LayoutDashboard,
   PlusCircle,
@@ -46,22 +46,20 @@ export function DashboardSidebar({
 }: DashboardSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const { signOut } = useClerk()
-  const { user } = useUser()
+  const { logout, user } = useAuth()
 
   const nav = role === 'ngo' ? ngoNav : donorNav
 
   const displayName =
     userName ||
-    user?.fullName ||
-    user?.primaryEmailAddress?.emailAddress?.split('@')[0] ||
+    user?.full_name ||
+    user?.email?.split('@')[0] ||
     (role === 'ngo' ? 'NGO' : 'Donor')
 
   const displayRole = userRole || (role === 'ngo' ? 'NGO' : 'Donor')
 
   async function handleSignOut() {
-    await signOut()
-    router.push('/login')
+    await logout()
   }
 
   return (

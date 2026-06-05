@@ -72,7 +72,6 @@ export const GET = withAdmin(
             avatar_url: users.avatar_url,
             role:       users.role,
             is_active:  users.is_active,
-            clerk_id:   users.clerk_id,
             created_at: users.created_at,
             updated_at: users.updated_at,
             // Donor profile (null when user has no donor profile)
@@ -114,7 +113,6 @@ export const GET = withAdmin(
         avatar_url: row.avatar_url,
         role:       row.role,
         is_active:  row.is_active,
-        clerk_id:   row.clerk_id,
         created_at: row.created_at,
         updated_at: row.updated_at,
         donor_profiles: row.dp_id ? [{
