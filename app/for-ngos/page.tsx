@@ -1,80 +1,71 @@
 import Link from 'next/link'
-import { Logo } from '@/components/mealsaver/logo'
 import { Clock3, MapPin, PackageCheck, Users } from 'lucide-react'
-
-const navLinks = [
-  { label: 'Home', href: '/' },
-  { label: 'How it Works', href: '/how-it-works' },
-  { label: 'For Donors', href: '/for-donors' },
-  { label: 'For NGOs', href: '/for-ngos' },
-  { label: 'Impact', href: '/impact-overview' },
-  { label: 'Login', href: '/login' },
-]
+import { SiteHeader } from '@/components/mealsaver/site-header'
+import { SiteFooter } from '@/components/mealsaver/site-footer'
+import { PageHero } from '@/components/mealsaver/page-hero'
+import { Reveal } from '@/components/mealsaver/reveal'
 
 const benefits = [
-  { icon: MapPin, title: 'Location-Based Matching', text: 'Receive opportunities based on service radius and city coverage.' },
-  { icon: PackageCheck, title: 'Food Preference Controls', text: 'Accept the categories and conditions your team can safely manage.' },
-  { icon: Clock3, title: 'Operational Clarity', text: 'Structured pickup and confirmation reduce back-and-forth coordination.' },
-  { icon: Users, title: 'Bigger Community Reach', text: 'Serve more people through dependable surplus recovery channels.' },
+  { icon: MapPin, title: 'Location-Based Matching', text: 'Receive donation opportunities based on your service radius and the areas you cover.' },
+  { icon: PackageCheck, title: 'Food Preference Controls', text: 'Accept only the categories and conditions your team can safely store, transport, and serve.' },
+  { icon: Clock3, title: 'Operational Clarity', text: 'Structured pickup and confirmation cut the back-and-forth, so volunteers spend time serving.' },
+  { icon: Users, title: 'Bigger Community Reach', text: 'Serve more people, more reliably, through a steady stream of recovered surplus food.' },
 ]
 
 export default function ForNgosPage() {
   return (
-    <div className="min-h-screen bg-[#f4f7f2] px-4 py-6 md:px-8 md:py-8">
-      <main className="mx-auto max-w-6xl rounded-2xl border border-[#e4e9e1] bg-white p-5 shadow-[0_1px_2px_rgba(13,30,14,0.06)] md:p-7">
-        <header className="flex items-center justify-between rounded-xl border border-[#e6ebe4] bg-white px-4 py-3">
-          <Logo size="sm" />
-          <nav className="hidden items-center gap-7 text-sm font-medium text-[#3f4d43] md:flex">
-            {navLinks.map((link) => (
-              <Link key={link.label} href={link.href} className="transition-colors hover:text-[#11291a]">
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-          <Link
-            href="/login?role=receiver"
-            className="rounded-lg bg-[#1f8a42] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#187336]"
-          >
-            NGO Login
-          </Link>
-        </header>
+    <div className="min-h-screen bg-[#f4f7f2]">
+      <SiteHeader variant="dark" cta={{ label: 'NGO Login', href: '/login?role=receiver' }} />
 
-        <section className="px-2 pb-4 pt-10 md:px-3">
-          <h1 className="text-4xl font-extrabold leading-tight text-[#141b17] md:text-5xl">For NGOs and Community Kitchens</h1>
-          <p className="mt-3 max-w-3xl text-base leading-relaxed text-[#5f6d63] md:text-lg">
-            MealSaver helps NGOs discover, claim, and receive food donations faster, while keeping pickup flow accountable.
-          </p>
-        </section>
+      <PageHero
+        image="/images/volunteers-help.jpg"
+        alt="Volunteers organising and distributing donated food"
+        eyebrow="For NGOs & Community Kitchens"
+        title={<>More food for the people <span className="text-[#7ee69a]">you already serve.</span></>}
+        subtitle="MealSaver helps NGOs and community kitchens discover, claim, and receive food donations faster — while keeping every pickup accountable and safe for the families you care for."
+        primary={{ label: 'Register as NGO', href: '/ngo/register' }}
+        secondary={{ label: 'Log In', href: '/login?role=receiver' }}
+      />
 
-        <section className="grid grid-cols-1 gap-4 px-2 pb-5 md:grid-cols-2 md:px-3">
-          {benefits.map((item) => (
-            <article key={item.title} className="rounded-2xl border border-[#e4e9e1] bg-white px-6 py-6">
-              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#17883f]">
-                <item.icon size={22} className="text-white" />
-              </div>
-              <h2 className="text-xl font-semibold text-[#1c241f]">{item.title}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-[#5f6d63]">{item.text}</p>
-            </article>
+      <section className="mx-auto max-w-6xl px-5 py-20 md:px-6 md:py-24">
+        <Reveal className="max-w-2xl">
+          <span className="text-sm font-semibold uppercase tracking-wide text-[#14843e]">Built for the field</span>
+          <h2 className="mt-3 text-3xl font-extrabold text-[#141b17] md:text-4xl">
+            Spend less time coordinating, more time feeding.
+          </h2>
+        </Reveal>
+
+        <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2">
+          {benefits.map((item, i) => (
+            <Reveal key={item.title} delay={i * 80}>
+              <article className="group h-full rounded-2xl border border-[#e4e9e1] bg-white p-7 transition-all hover:-translate-y-1 hover:border-[#bfe3c6] hover:shadow-lg hover:shadow-[#11291a]/5">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#17883f] text-white">
+                  <item.icon size={22} />
+                </div>
+                <h3 className="text-xl font-semibold text-[#1c241f]">{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-[#5f6d63]">{item.text}</p>
+              </article>
+            </Reveal>
           ))}
-        </section>
+        </div>
+      </section>
 
-        <section className="px-2 pb-2 md:px-3">
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href="/ngo/register"
-              className="rounded-lg bg-[#18883f] px-5 py-3 text-sm font-semibold text-white hover:bg-[#127134]"
-            >
+      <section className="bg-white py-16 md:py-20">
+        <Reveal className="mx-auto max-w-3xl px-5 text-center md:px-6">
+          <h2 className="text-2xl font-extrabold text-[#141b17] md:text-3xl">Bring dependable surplus to your community</h2>
+          <p className="mx-auto mt-3 max-w-xl text-[#5f6d63]">Join a network of verified partners and never let a nearby surplus go to waste again.</p>
+          <div className="mt-7 flex flex-wrap justify-center gap-4">
+            <Link href="/ngo/register" className="rounded-xl bg-[#18883f] px-6 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-[#127134]">
               Register as NGO
             </Link>
-            <Link
-              href="/login?role=receiver"
-              className="rounded-lg border border-[#1f8a42] px-5 py-3 text-sm font-semibold text-[#1f7f3d] hover:bg-[#f4f9f4]"
-            >
+            <Link href="/login?role=receiver" className="rounded-xl border border-[#1f8a42] px-6 py-3 text-sm font-semibold text-[#1f7f3d] transition-colors hover:bg-[#f4f9f4]">
               Log In
             </Link>
           </div>
-        </section>
-      </main>
+        </Reveal>
+      </section>
+
+      <SiteFooter />
     </div>
   )
 }

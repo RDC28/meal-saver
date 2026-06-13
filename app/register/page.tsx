@@ -1,85 +1,73 @@
 import Link from 'next/link'
-import { Store, Users, CheckCircle2 } from 'lucide-react'
+import { Store, Users, CheckCircle2, ArrowRight } from 'lucide-react'
+import { AuthLayout } from '@/components/mealsaver/auth-layout'
 
 const options = [
   {
     href: '/donor/register',
     icon: Store,
-    title: 'Register as Donor',
-    perks: [
-      'Restaurants, Bakeries, Cafes',
-      'Upload surplus food or raw materials',
-      'Schedule pickup quickly',
-    ],
+    title: 'I have food to give',
+    subtitle: 'Donor',
+    perks: ['Restaurants, bakeries & cafés', 'List surplus food in minutes', 'Schedule a quick, safe pickup'],
   },
   {
     href: '/ngo/register',
     icon: Users,
-    title: 'Register as NGO / Receiver',
-    perks: [
-      'Shelters, Community Kitchens, Orphanages',
-      'Accept nearby donations',
-      'Track received meals and impact',
-    ],
+    title: 'I serve people in need',
+    subtitle: 'NGO / Receiver',
+    perks: ['Shelters, kitchens & orphanages', 'Accept nearby donations', 'Track meals and impact'],
   },
 ]
 
 export default function RegisterPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-16">
-      <h1 className="mb-2 text-2xl font-bold text-foreground">Registration Choice</h1>
-      <p className="mb-10 text-sm text-muted-foreground">
-        Choose how you'd like to join MealSaver
-      </p>
+    <AuthLayout
+      image="/images/children-meal.jpg"
+      imageAlt="Children sharing a warm meal together"
+      panelTitle="Join the movement."
+      panelSubtitle="It takes two minutes to start turning everyday surplus into someone's next warm meal."
+      width="xl"
+    >
+      <div>
+        <h1 className="text-2xl font-extrabold text-[#141b17]">How would you like to join?</h1>
+        <p className="mt-1.5 text-sm text-[#5f6d63]">Choose the role that fits you. You can always reach out if you do both.</p>
 
-      <div className="grid w-full max-w-2xl grid-cols-1 gap-6 md:grid-cols-2">
-        {options.map(({ href, icon: Icon, title, perks }) => (
-          <div
-            key={title}
-            className="flex flex-col rounded-2xl border border-border bg-card px-7 pb-7 pt-8 shadow-sm"
-          >
-            {/* Icon */}
-            <div className="mb-4 flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary">
-                <Icon size={30} className="text-primary" strokeWidth={1.5} />
-              </div>
-            </div>
-
-            {/* Title */}
-            <h2 className="mb-4 text-center text-lg font-bold text-primary">{title}</h2>
-
-            {/* Divider */}
-            <div className="mb-4 h-px bg-border" />
-
-            {/* Perks */}
-            <ul className="mb-7 space-y-2.5">
-              {perks.map((perk) => (
-                <li key={perk} className="flex items-start gap-2 text-sm text-foreground">
-                  <CheckCircle2
-                    size={16}
-                    className="mt-0.5 shrink-0 text-primary"
-                    strokeWidth={2}
-                  />
-                  {perk}
-                </li>
-              ))}
-            </ul>
-
+        <div className="mt-7 grid grid-cols-1 gap-5 sm:grid-cols-2">
+          {options.map(({ href, icon: Icon, title, subtitle, perks }) => (
             <Link
+              key={title}
               href={href}
-              className="mt-auto w-full rounded-lg bg-primary py-3 text-center text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+              className="group flex flex-col rounded-2xl border border-[#e4e9e1] bg-white px-6 pb-6 pt-7 shadow-sm transition-all hover:-translate-y-1 hover:border-[#bfe3c6] hover:shadow-lg hover:shadow-[#11291a]/5"
             >
-              Continue
-            </Link>
-          </div>
-        ))}
-      </div>
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#17883f] text-white">
+                <Icon size={26} strokeWidth={1.8} />
+              </div>
+              <span className="text-xs font-semibold uppercase tracking-wide text-[#14843e]">{subtitle}</span>
+              <h2 className="mt-1 text-lg font-bold text-[#141b17]">{title}</h2>
 
-      <p className="mt-10 flex items-center gap-1.5 text-sm text-muted-foreground">
-        <span>🌿</span>
-        Together, we can reduce food waste and create a{' '}
-        <strong className="text-foreground">hunger-free</strong> tomorrow.
-      </p>
-    </div>
+              <ul className="mt-4 mb-6 space-y-2.5">
+                {perks.map((perk) => (
+                  <li key={perk} className="flex items-start gap-2 text-sm text-[#3f4d43]">
+                    <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[#14843e]" strokeWidth={2} />
+                    {perk}
+                  </li>
+                ))}
+              </ul>
+
+              <span className="mt-auto inline-flex items-center gap-1.5 text-sm font-semibold text-[#14843e]">
+                Continue <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </Link>
+          ))}
+        </div>
+
+        <p className="mt-8 text-center text-sm text-[#5f6d63]">
+          Already have an account?{' '}
+          <Link href="/login" className="font-semibold text-[#14843e] hover:underline">
+            Log in
+          </Link>
+        </p>
+      </div>
+    </AuthLayout>
   )
 }

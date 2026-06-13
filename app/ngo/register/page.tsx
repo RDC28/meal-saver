@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { useAuth } from '@/components/providers/auth-provider'
 import { Eye, EyeOff, Upload, UserCircle2, CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
-import { Logo } from '@/components/mealsaver/logo'
+import { AuthLayout } from '@/components/mealsaver/auth-layout'
 import { LocationPicker, type LocationValue } from '@/components/mealsaver/location-picker'
 
 type FormState = {
@@ -139,41 +139,48 @@ export default function NGORegisterPage() {
   // ── Account created screen
   if (emailSent) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
-        <div className="w-full max-w-md rounded-2xl border border-border bg-card px-8 py-10 text-center shadow-sm">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-50">
-            <CheckCircle2 size={28} className="text-primary" />
+      <AuthLayout
+        image="/images/volunteers-help.jpg"
+        imageAlt="Volunteers organising and distributing donated food"
+        panelTitle="Reach more people, more reliably."
+        panelSubtitle="Discover and claim nearby donations the moment they are posted."
+      >
+        <div className="rounded-2xl border border-[#e4e9e1] bg-white px-8 py-10 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#e3f4e6]">
+            <CheckCircle2 size={28} className="text-[#14843e]" />
           </div>
-          <h2 className="mb-2 text-xl font-bold text-foreground">Organisation registered!</h2>
-          <p className="mb-6 text-sm text-muted-foreground">
-            Your NGO account for <strong>{form.email}</strong> is ready.<br />
+          <h2 className="mb-2 text-xl font-bold text-[#141b17]">Organisation registered!</h2>
+          <p className="mb-6 text-sm text-[#5f6d63]">
+            Your NGO account for <strong className="text-[#141b17]">{form.email}</strong> is ready.<br />
             Log in to start accepting food donations.
           </p>
           <Link
             href="/login?role=receiver"
-            className="block w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            className="block w-full rounded-xl bg-[#18883f] py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-[#127134]"
           >
             Log in to Dashboard
           </Link>
         </div>
-      </div>
+      </AuthLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background px-4 py-12">
-      <div className="mx-auto max-w-2xl">
-        <div className="mb-8 flex items-center gap-3">
-          <Logo />
-        </div>
-
-        <div className="rounded-2xl border border-border bg-card px-8 py-8 shadow-sm">
-          <div className="mb-6 flex items-center gap-2 text-sm text-muted-foreground">
-            <UserCircle2 size={16} className="text-primary" />
+    <AuthLayout
+      image="/images/volunteers-help.jpg"
+      imageAlt="Volunteers organising and distributing donated food"
+      panelTitle="Reach more people, more reliably."
+      panelSubtitle="Discover and claim nearby donations the moment they are posted."
+      bullets={['Get matched by location and food type', 'Accept only what your team can handle', 'Track received meals and impact']}
+      width="xl"
+    >
+        <div className="rounded-2xl border border-[#e4e9e1] bg-white px-7 py-8 shadow-sm md:px-8">
+          <div className="mb-6 flex items-center gap-2 text-sm text-[#5f6d63]">
+            <UserCircle2 size={16} className="text-[#14843e]" />
             Register your organisation to start receiving donations.
           </div>
 
-          <h1 className="mb-6 text-xl font-bold text-foreground">NGO / Receiver Registration Form</h1>
+          <h1 className="mb-6 text-xl font-bold text-[#141b17]">NGO / Receiver Registration</h1>
 
           {/* Error banner */}
           {error && (
@@ -407,15 +414,14 @@ export default function NGORegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#18883f] py-3 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[#127134] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
             >
               {loading && <Loader2 size={16} className="animate-spin" />}
               {loading ? 'Creating account…' : 'Create NGO Account'}
             </button>
           </form>
         </div>
-      </div>
-    </div>
+    </AuthLayout>
   )
 }
 
