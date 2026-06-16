@@ -200,6 +200,7 @@ export default function DonorRegisterPage() {
                 <input
                   type="text"
                   placeholder="Full name"
+                  autoComplete="name"
                   className={inputCls}
                   {...field('full_name')}
                 />
@@ -212,6 +213,8 @@ export default function DonorRegisterPage() {
                   <input
                     type="tel"
                     placeholder="98765 43210"
+                    inputMode="numeric"
+                    autoComplete="tel-national"
                     className={inputCls + ' rounded-l-none'}
                     {...field('phone')}
                   />
@@ -224,6 +227,7 @@ export default function DonorRegisterPage() {
               <input
                 type="email"
                 placeholder="you@example.com"
+                autoComplete="email"
                 className={inputCls}
                 {...field('email')}
               />
@@ -234,6 +238,7 @@ export default function DonorRegisterPage() {
               <input
                 type="text"
                 placeholder="Street address"
+                autoComplete="street-address"
                 className={inputCls}
                 {...field('address')}
               />
@@ -242,12 +247,13 @@ export default function DonorRegisterPage() {
             {/* Row 3 */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Field label="City / Area" required>
-                <input
-                  type="text"
-                  placeholder="e.g. Bengaluru"
-                  className={inputCls}
-                  {...field('city')}
-                />
+<input
+type="text"
+placeholder="e.g. Bengaluru"
+autoComplete="address-level2"
+className={inputCls}
+{...field('city')}
+/>
               </Field>
               <Field label="Food License Number">
                 <input
@@ -269,7 +275,7 @@ export default function DonorRegisterPage() {
                   // fields it couldn't determine.
                   setForm(prev => ({
                     ...prev,
-                    address: loc.street ?? prev.address,
+                    address: loc.street ?? loc.address ?? prev.address,
                     city: loc.city ?? prev.city,
                   }))
                 }}
@@ -284,6 +290,7 @@ export default function DonorRegisterPage() {
                   <input
                     type={showPw ? 'text' : 'password'}
                     placeholder="Min. 8 characters"
+                    autoComplete="new-password"
                     className={inputCls + ' pr-10'}
                     {...field('password')}
                   />
@@ -301,6 +308,7 @@ export default function DonorRegisterPage() {
                   <input
                     type={showConfirm ? 'text' : 'password'}
                     placeholder="Repeat password"
+                    autoComplete="new-password"
                     className={inputCls + ' pr-10'}
                     {...field('confirm_password')}
                   />

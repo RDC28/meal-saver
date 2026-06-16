@@ -226,6 +226,7 @@ export default function NGORegisterPage() {
                 <input
                   type="text"
                   placeholder="Full name"
+                  autoComplete="name"
                   className={inputCls}
                   {...field('full_name')}
                 />
@@ -238,6 +239,8 @@ export default function NGORegisterPage() {
                   <input
                     type="tel"
                     placeholder="98765 43210"
+                    inputMode="numeric"
+                    autoComplete="tel-national"
                     className={inputCls + ' rounded-l-none'}
                     {...field('phone')}
                   />
@@ -251,6 +254,7 @@ export default function NGORegisterPage() {
                 <input
                   type="email"
                   placeholder="you@example.com"
+                  autoComplete="email"
                   className={inputCls}
                   {...field('email')}
                 />
@@ -271,6 +275,7 @@ export default function NGORegisterPage() {
               <input
                 type="text"
                 placeholder="Enter full address"
+                autoComplete="street-address"
                 className={inputCls}
                 {...field('address')}
               />
@@ -281,6 +286,7 @@ export default function NGORegisterPage() {
               <input
                 type="text"
                 placeholder="e.g. Bengaluru"
+                autoComplete="address-level2"
                 className={inputCls}
                 {...field('city')}
               />
@@ -296,7 +302,7 @@ export default function NGORegisterPage() {
                   // fields it couldn't determine.
                   setForm(prev => ({
                     ...prev,
-                    address: loc.street ?? prev.address,
+                    address: loc.street ?? loc.address ?? prev.address,
                     city: loc.city ?? prev.city,
                   }))
                 }}
@@ -338,6 +344,7 @@ export default function NGORegisterPage() {
                   <input
                     type={showPw ? 'text' : 'password'}
                     placeholder="Min. 8 characters"
+                    autoComplete="new-password"
                     className={inputCls + ' pr-10'}
                     {...field('password')}
                   />
@@ -355,6 +362,7 @@ export default function NGORegisterPage() {
                   <input
                     type={showConfirm ? 'text' : 'password'}
                     placeholder="Repeat password"
+                    autoComplete="new-password"
                     className={inputCls + ' pr-10'}
                     {...field('confirm_password')}
                   />

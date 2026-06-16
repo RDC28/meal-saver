@@ -43,7 +43,12 @@ type NominatimAddress = {
 
 function normalizeAddress(a?: NominatimAddress): GeocodeAddress | undefined {
   if (!a) return undefined
-  const street = [a.house_number, a.road].filter(Boolean).join(' ').trim() || undefined
+  const streetParts = [
+    [a.house_number, a.road].filter(Boolean).join(' ').trim(),
+    a.neighbourhood,
+    a.suburb,
+  ].filter((part, index, parts): part is string => Boolean(part) && parts.indexOf(part) === index)
+  const street = streetParts.join(', ') || undefined
   const city = a.city || a.town || a.village || a.municipality || a.suburb || a.county || undefined
   return {
     street: street ?? a.neighbourhood ?? a.suburb,

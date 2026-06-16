@@ -120,6 +120,7 @@ export default function CreateDonationPage() {
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -374,6 +375,7 @@ export default function CreateDonationPage() {
                   {...register('pickup_address')}
                   type="text"
                   placeholder="Street address, landmark"
+                  autoComplete="street-address"
                   className={inputCls}
                 />
               </Field>
@@ -382,6 +384,7 @@ export default function CreateDonationPage() {
                   {...register('pickup_city')}
                   type="text"
                   placeholder="e.g. Bengaluru"
+                  autoComplete="address-level2"
                   className={inputCls}
                 />
               </Field>
@@ -391,7 +394,22 @@ export default function CreateDonationPage() {
             <Field label="Pin pickup location" required>
               <LocationPicker
                 value={location}
-                onChange={setLocation}
+                onChange={(loc) => {
+                  setLocation(loc)
+                  const resolvedAddress = loc.street ?? loc.address
+                  if (resolvedAddress) {
+                    setValue('pickup_address', resolvedAddress, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
+                  if (loc.city) {
+                    setValue('pickup_city', loc.city, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
+                }}
                 placeholder="Search address, landmark, or pincode…"
               />
             </Field>
@@ -416,6 +434,8 @@ export default function CreateDonationPage() {
                     type="tel"
                     placeholder="9876543210"
                     maxLength={10}
+                    inputMode="numeric"
+                    autoComplete="tel-national"
                     className={inputCls + ' rounded-l-none'}
                   />
                 </div>
