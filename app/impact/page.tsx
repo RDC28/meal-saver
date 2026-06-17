@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Loader2, AlertCircle } from 'lucide-react'
+import { Loader2, AlertCircle, Utensils, Leaf, Cloud, Users, Handshake, Sprout } from 'lucide-react'
 import { DashboardSidebar } from '@/components/mealsaver/dashboard-sidebar'
 
 interface ImpactSummary {
@@ -56,10 +56,10 @@ export default function ImpactPage() {
   const n = (v: number | null | undefined) => Number(v ?? 0).toLocaleString()
 
   const stats = [
-    { emoji: '🍜', value: n(summary?.total_meals_saved),           label: 'Meals Saved' },
-    { emoji: '🌿', value: `${n(summary?.total_food_waste_reduced_kg)} kg`, label: 'Food Waste Reduced' },
-    { emoji: '☁️', value: `${n(summary?.total_co2_impact_kg)} kg`,  label: 'CO₂ Impact Avoided' },
-    { emoji: '👥', value: n(summary?.total_donations_completed),   label: 'Donations Completed' },
+    { emoji: <Utensils className="h-6 w-6 text-orange-500" />, value: n(summary?.total_meals_saved),           label: 'Meals Saved' },
+    { emoji: <Leaf className="h-6 w-6 text-green-600" />, value: `${n(summary?.total_food_waste_reduced_kg)} kg`, label: 'Food Waste Reduced' },
+    { emoji: <Cloud className="h-6 w-6 text-blue-500" />, value: `${n(summary?.total_co2_impact_kg)} kg`,  label: 'CO₂ Impact Avoided' },
+    { emoji: <Users className="h-6 w-6 text-purple-500" />, value: n(summary?.total_donations_completed),   label: 'Donations Completed' },
   ]
 
   return (
@@ -88,7 +88,7 @@ export default function ImpactPage() {
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
               {stats.map((s) => (
                 <div key={s.label} className="rounded-2xl border border-border bg-card px-5 py-4 shadow-sm">
-                  <span className="text-2xl">{s.emoji}</span>
+                  <div>{s.emoji}</div>
                   <p className="mt-2 text-2xl font-bold text-foreground">{s.value}</p>
                   <p className="text-sm text-muted-foreground">{s.label}</p>
                 </div>
@@ -98,7 +98,7 @@ export default function ImpactPage() {
             {/* People served highlight */}
             {(summary?.total_people_served ?? 0) > 0 && (
               <div className="rounded-2xl border border-primary/20 bg-primary/5 px-6 py-5 shadow-sm flex items-center gap-5">
-                <span className="text-4xl">🤝</span>
+                <Handshake className="h-10 w-10 text-primary" />
                 <div>
                   <p className="text-3xl font-bold text-primary">{n(summary?.total_people_served)}</p>
                   <p className="text-sm font-medium text-foreground">People served through your donations</p>
@@ -121,7 +121,7 @@ export default function ImpactPage() {
                   {reports.map((r) => (
                     <div key={r.id} className="flex items-start justify-between gap-4">
                       <div className="flex items-start gap-3">
-                        <span className="text-2xl">🍜</span>
+                        <Utensils className="h-6 w-6 text-orange-500 mt-1" />
                         <div>
                           <p className="text-sm font-semibold text-foreground">
                             {r.meals_saved} meals saved · {r.food_waste_reduced_kg} kg rescued
@@ -144,8 +144,8 @@ export default function ImpactPage() {
 
             {/* Zero-state encouragement */}
             {!summary?.total_meals_saved && (
-              <div className="rounded-2xl border border-border bg-secondary/40 px-6 py-5 text-center shadow-sm">
-                <p className="text-2xl mb-2">🌱</p>
+              <div className="rounded-2xl border border-border bg-secondary/40 px-6 py-5 text-center shadow-sm flex flex-col items-center">
+                <Sprout className="h-8 w-8 text-green-500 mb-2" />
                 <p className="font-semibold text-foreground">Your impact journey starts here</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {role === 'ngo'

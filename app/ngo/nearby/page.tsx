@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Clock, MapPin, Phone, RefreshCw, Search, SlidersHorizontal, Utensils } from 'lucide-react'
+import { Clock, MapPin, Phone, RefreshCw, Search, Utensils } from 'lucide-react'
 import { DashboardSidebar } from '@/components/mealsaver/dashboard-sidebar'
 
 interface Donation {
@@ -106,7 +106,11 @@ export default function NGONearbyPage() {
     setFetchError(null)
 
     try {
-      const res = await fetch(`/api/donations/${id}/accept`, { method: 'POST' })
+    const res = await fetch(`/api/donations/${id}/accept`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    })
       if (!res.ok) throw new Error(await readError(res))
       await fetchDonations(typeFilter)
     } catch (e) {
@@ -182,13 +186,6 @@ export default function NGONearbyPage() {
               ))}
             </div>
 
-            <button
-              type="button"
-              className="flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-sm text-muted-foreground hover:bg-secondary"
-            >
-              <SlidersHorizontal size={14} />
-              More Filters
-            </button>
           </div>
 
           <div className="space-y-4">

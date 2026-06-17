@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { PlusCircle, MoreVertical, BarChart2 } from 'lucide-react'
+import { PlusCircle, BarChart2, Package, CheckCircle, Utensils, Leaf } from 'lucide-react'
 import { getSessionPayload } from '@/lib/auth/session'
 import { db, donations, users, donor_profiles, impact_reports } from '@/lib/db'
 import { eq, desc, inArray, count, sum, and } from 'drizzle-orm'
@@ -99,10 +99,10 @@ export default async function DonorDashboardPage() {
   }
 
   const stats = [
-    { icon: '🍱', value: String(activeDonations), label: 'Active Donations', sub: 'View all', href: '/donor/donations' },
-    { icon: '✅', value: String(deliveredDonations), label: 'Successful Deliveries', sub: 'View all', href: '/donor/history' },
-    { icon: '🍜', value: mealsSaved.toLocaleString('en-IN'), label: 'Meals Saved', sub: 'All time' },
-    { icon: '🌿', value: `${wasteReduced.toLocaleString('en-IN')} kg`, label: 'Waste Reduced', sub: 'All time' },
+    { icon: <Package className="h-6 w-6 text-primary" />, value: String(activeDonations), label: 'Active Donations', sub: 'View all', href: '/donor/donations' },
+    { icon: <CheckCircle className="h-6 w-6 text-green-500" />, value: String(deliveredDonations), label: 'Successful Deliveries', sub: 'View all', href: '/donor/history' },
+    { icon: <Utensils className="h-6 w-6 text-orange-500" />, value: mealsSaved.toLocaleString('en-IN'), label: 'Meals Saved', sub: 'All time' },
+    { icon: <Leaf className="h-6 w-6 text-green-600" />, value: `${wasteReduced.toLocaleString('en-IN')} kg`, label: 'Waste Reduced', sub: 'All time' },
   ]
 
   return (
@@ -112,8 +112,8 @@ export default async function DonorDashboardPage() {
       <main className="flex-1 overflow-y-auto">
         <div className="flex items-start justify-between border-b border-border bg-card px-8 py-5">
           <div>
-            <h1 className="text-lg font-bold text-foreground">
-              Welcome back, {businessName}! 🌿
+            <h1 className="flex items-center gap-2 text-lg font-bold text-foreground">
+              Welcome back, {businessName}! <Leaf className="h-5 w-5 text-green-500" />
             </h1>
             <p className="text-sm text-muted-foreground">
               Together, we&apos;re reducing waste and feeding more people.
@@ -135,7 +135,7 @@ export default async function DonorDashboardPage() {
                 key={s.label}
                 className="rounded-2xl border border-border bg-card px-5 py-4 shadow-sm"
               >
-                <span className="text-2xl">{s.icon}</span>
+                <div>{s.icon}</div>
                 <p className="mt-2 text-2xl font-bold text-foreground">{s.value}</p>
                 <p className="text-sm text-muted-foreground">{s.label}</p>
                 {s.href ? (
@@ -165,7 +165,7 @@ export default async function DonorDashboardPage() {
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3">Pickup Window</th>
                     <th className="px-4 py-3">Date</th>
-                    <th className="px-4 py-3" />
+                    <th className="px-4 py-3 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -185,11 +185,14 @@ export default async function DonorDashboardPage() {
                         </td>
                         <td className="px-4 py-3.5 text-muted-foreground">{d.window}</td>
                         <td className="px-4 py-3.5 text-muted-foreground">{d.time}</td>
-                        <td className="px-4 py-3.5">
-                          <button className="text-muted-foreground hover:text-foreground">
-                            <MoreVertical size={16} />
-                          </button>
-                        </td>
+                          <td className="px-4 py-3.5 text-right">
+                            <Link
+                              href={`/donor/donations/${d.id}`}
+                              className="rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary"
+                            >
+                              View
+                            </Link>
+                          </td>
                       </tr>
                     ))
                   )}
@@ -200,7 +203,7 @@ export default async function DonorDashboardPage() {
 
           <div className="flex items-center justify-between rounded-2xl border border-border bg-secondary/40 px-6 py-4">
             <div className="flex items-center gap-3">
-              <span className="text-2xl">🌿</span>
+              <Leaf className="h-8 w-8 text-green-500" />
               <div>
                 <p className="font-semibold text-foreground">Great going!</p>
                 <p className="text-sm text-muted-foreground">

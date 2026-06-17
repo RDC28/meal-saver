@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { RefreshCw, Clock, MapPin, Heart } from 'lucide-react'
+import { RefreshCw, Clock, MapPin, Heart, CheckCircle, Package, Utensils } from 'lucide-react'
 import { getSessionPayload } from '@/lib/auth/session'
 import { db, users, receiver_profiles, donations, pickup_assignments, impact_reports } from '@/lib/db'
 import { eq, and, ilike, sql, count, sum } from 'drizzle-orm'
@@ -102,25 +102,28 @@ export default async function NGODashboardPage() {
                 : 'Complete your profile to see nearby donations'}
             </p>
           </div>
-          <button className="flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary">
+          <Link
+            href="/ngo/nearby"
+            className="flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary"
+          >
             <RefreshCw size={14} />
-            Refresh
-          </button>
+            View all
+          </Link>
         </div>
 
         <div className="px-8 py-6 space-y-6">
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             {[
-              { icon: '✅', value: String(availableCount?.total ?? 0), label: 'Available Nearby' },
-              { icon: '📦', value: String(acceptedToday?.total ?? 0), label: 'Accepted Today' },
-              { icon: '🍜', value: String(totalMeals),                 label: 'Meals Received' },
-              { icon: '📍', value: `${radiusKm} km`,                   label: 'Service Radius' },
+              { icon: <CheckCircle className="h-6 w-6 text-green-500 mx-auto" />, value: String(availableCount?.total ?? 0), label: 'Available Nearby' },
+              { icon: <Package className="h-6 w-6 text-primary mx-auto" />, value: String(acceptedToday?.total ?? 0), label: 'Accepted Today' },
+              { icon: <Utensils className="h-6 w-6 text-orange-500 mx-auto" />, value: String(totalMeals),                 label: 'Meals Received' },
+              { icon: <MapPin className="h-6 w-6 text-blue-500 mx-auto" />, value: `${radiusKm} km`,                   label: 'Service Radius' },
             ].map((s) => (
               <div
                 key={s.label}
                 className="rounded-2xl border border-border bg-card px-5 py-4 shadow-sm text-center"
               >
-                <span className="text-2xl">{s.icon}</span>
+                <div>{s.icon}</div>
                 <p className="mt-2 text-2xl font-bold text-foreground">{s.value}</p>
                 <p className="text-sm text-muted-foreground">{s.label}</p>
               </div>
@@ -148,8 +151,8 @@ export default async function NGODashboardPage() {
                       </div>
                     )}
                     <div className="flex items-start gap-4">
-                      <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-3xl">
-                        🍱
+                      <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-orange-50">
+                        <Utensils className="h-10 w-10 text-orange-500" />
                       </div>
                       <div className="flex-1 space-y-1.5">
                         <h3 className="font-semibold text-foreground">{d.title}</h3>

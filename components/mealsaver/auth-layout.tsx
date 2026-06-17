@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, Sprout } from 'lucide-react'
+import { ArrowLeft, Sprout, Check } from 'lucide-react'
 import { Logo } from '@/components/mealsaver/logo'
 import { cn } from '@/lib/utils'
 
@@ -53,7 +53,7 @@ export function AuthLayout({
                     {bullets.map((b) => (
                       <li key={b} className="flex items-start gap-2.5 text-sm text-white/85">
                         <span className="mt-0.5 flex h-5 w-5 flex-none items-center justify-center rounded-full bg-[#22a34a] text-white">
-                          ✓
+                          <Check size={12} />
                         </span>
                         {b}
                       </li>

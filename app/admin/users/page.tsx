@@ -67,27 +67,53 @@ export default function AdminUsersPage() {
 
   useEffect(() => { fetchUsers() }, [fetchUsers])
 
-  async function handleVerify(userId: string, status: 'verified' | 'rejected') {
-    setActing((p) => ({ ...p, [userId]: true }))
-    await fetch(`/api/admin/users/${userId}/verify`, {
+async function handleVerify(userId: string, status: 'verified' | 'rejected') {
+  setActing((p) => ({ ...p, [userId]: true }))
+  setError(null)
+
+  try {
+    const res = await fetch(`/api/admin/users/${userId}/verify`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
     })
+
+    const json = await res.json().catch(() => null)
+    if (!res.ok) {
+      throw new Error(json?.error?.message ?? 'Failed to update verification status')
+    }
+
     await fetchUsers()
+  } catch (e) {
+    setError(e instanceof Error ? e.message : 'Failed to update verification status')
+  } finally {
     setActing((p) => ({ ...p, [userId]: false }))
   }
+}
 
-  async function handleSuspend(userId: string, suspended: boolean) {
-    setActing((p) => ({ ...p, [userId]: true }))
-    await fetch(`/api/admin/users/${userId}/suspend`, {
+async function handleSuspend(userId: string, suspended: boolean) {
+  setActing((p) => ({ ...p, [userId]: true }))
+  setError(null)
+
+  try {
+    const res = await fetch(`/api/admin/users/${userId}/suspend`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ suspended }),
     })
+
+    const json = await res.json().catch(() => null)
+    if (!res.ok) {
+      throw new Error(json?.error?.message ?? 'Failed to update account status')
+    }
+
     await fetchUsers()
+  } catch (e) {
+    setError(e instanceof Error ? e.message : 'Failed to update account status')
+  } finally {
     setActing((p) => ({ ...p, [userId]: false }))
   }
+}
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -165,8 +191,9 @@ export default function AdminUsersPage() {
                     const orgName   = u.donor_profiles[0]?.business_name ?? u.receiver_profiles[0]?.organization_name
                     const city      = u.donor_profiles[0]?.city ?? u.receiver_profiles[0]?.city ?? '—'
                     const verSt     = u.donor_profiles[0]?.verification_status ?? u.receiver_profiles[0]?.verification_status ?? 'pending'
-                    const isPending = verSt === 'pending'
-                    return (
+          const canReview = u.role === 'donor' || u.role === 'receiver'
+          const isPending = canReview && verSt === 'pending'
+          return (
                       <tr key={u.id} className={`hover:bg-secondary/30 ${!u.is_active ? 'opacity-60' : ''}`}>
                         <td className="px-5 py-3">
                           <p className="font-medium text-foreground">{orgName ?? u.full_name}</p>
@@ -187,33 +214,36 @@ export default function AdminUsersPage() {
                           {new Date(u.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-1.5">
-                            {isPending && (
-                              <>
-                                <button
-                                  onClick={() => handleVerify(u.id, 'verified')}
-                                  disabled={acting[u.id]}
-                                  title="Verify"
-                                  className="rounded-lg bg-primary p-1.5 text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
-                                >
-                                  <CheckCircle2 size={13} />
-                                </button>
-                                <button
-                                  onClick={() => handleVerify(u.id, 'rejected')}
-                                  disabled={acting[u.id]}
-                                  title="Reject"
-                                  className="rounded-lg border border-destructive p-1.5 text-destructive hover:bg-destructive/10 disabled:opacity-60"
-                                >
-                                  <X size={13} />
-                                </button>
-                              </>
-                            )}
-                            {u.role !== 'admin' && (
-                              <button
-                                onClick={() => handleSuspend(u.id, u.is_active)}
-                                disabled={acting[u.id]}
-                                title={u.is_active ? 'Suspend' : 'Reactivate'}
-                                className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-secondary disabled:opacity-60"
+              <div className="flex items-center gap-1.5">
+                {isPending && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleVerify(u.id, 'verified')}
+                      disabled={acting[u.id]}
+                      title="Verify"
+                      className="rounded-lg bg-primary p-1.5 text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                    >
+                      <CheckCircle2 size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleVerify(u.id, 'rejected')}
+                      disabled={acting[u.id]}
+                      title="Reject"
+                      className="rounded-lg border border-destructive p-1.5 text-destructive hover:bg-destructive/10 disabled:opacity-60"
+                    >
+                      <X size={13} />
+                    </button>
+                  </>
+                )}
+                {u.role !== 'admin' && (
+                  <button
+                    type="button"
+                    onClick={() => handleSuspend(u.id, u.is_active)}
+                    disabled={acting[u.id]}
+                    title={u.is_active ? 'Suspend' : 'Reactivate'}
+                    className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-secondary disabled:opacity-60"
                               >
                                 <Ban size={13} />
                               </button>

@@ -5,7 +5,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useRouter } from 'next/navigation'
-import { AlertCircle, Plus, X, Loader2 } from 'lucide-react'
+import { AlertCircle, Plus, X, Loader2, Check } from 'lucide-react'
 import { DashboardSidebar } from '@/components/mealsaver/dashboard-sidebar'
 import { LocationPicker, type LocationValue } from '@/components/mealsaver/location-picker'
 import { UPLOAD } from '@/lib/constants'
@@ -500,7 +500,7 @@ export default function CreateDonationPage() {
             </div>
 
             <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-              <span className="text-primary">✓</span>
+              <Check className="h-4 w-4 text-primary" />
               All donations are verified and used for social good.
             </div>
           </form>

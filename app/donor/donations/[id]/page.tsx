@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import {
   ArrowLeft, Phone, CheckCircle2, Circle,
-  Store, Building2, Loader2, AlertCircle,
+  Store, Building2, Loader2, AlertCircle, Utensils, Leaf,
 } from 'lucide-react'
 import { DashboardSidebar } from '@/components/mealsaver/dashboard-sidebar'
 import { StatusBadge } from '@/components/mealsaver/status-badge'
@@ -139,7 +139,7 @@ export default function DonorDonationDetailPage() {
           {/* Title + status stepper */}
           <div className="rounded-2xl border border-border bg-card px-6 py-5 shadow-sm">
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-6">
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-4xl">🍛</div>
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-orange-50"><Utensils className="h-10 w-10 text-orange-500" /></div>
               <div className="flex-1 space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-xl font-bold text-foreground">{donation.title}</h1>
@@ -245,7 +245,7 @@ export default function DonorDonationDetailPage() {
 
               <div className="rounded-2xl border border-border bg-secondary/40 px-5 py-4 text-sm">
                 <p className="flex items-center gap-2 font-medium text-foreground">
-                  <span>🌿</span> Thank you for your generosity!
+                  <Leaf className="h-5 w-5 text-green-500" /> Thank you for your generosity!
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Posted {fmt(donation.created_at)}

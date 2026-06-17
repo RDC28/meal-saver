@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useAuth } from '@/components/providers/auth-provider'
 import {
   LayoutDashboard,
@@ -45,7 +45,6 @@ export function DashboardSidebar({
   userRole,
 }: DashboardSidebarProps) {
   const pathname = usePathname()
-  const router = useRouter()
   const { logout, user } = useAuth()
 
   const nav = role === 'ngo' ? ngoNav : donorNav
@@ -111,9 +110,9 @@ export function DashboardSidebar({
         <div className="space-y-1">
           <p className="text-xs font-semibold text-foreground">Need Help?</p>
           <p className="text-xs text-muted-foreground">We&apos;re here to assist you.</p>
-          <button className="mt-2 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary">
+          <Link href="mailto:support@mealsaver.local" className="mt-2 inline-flex rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-secondary">
             Contact Support
-          </button>
+          </Link>
         </div>
         <button
           onClick={handleSignOut}

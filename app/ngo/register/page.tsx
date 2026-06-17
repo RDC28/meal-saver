@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { useAuth } from '@/components/providers/auth-provider'
-import { Eye, EyeOff, Upload, UserCircle2, CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
+import { Eye, EyeOff, Upload, UserCircle2, CheckCircle2, Loader2, AlertCircle, Check } from 'lucide-react'
 import { AuthLayout } from '@/components/mealsaver/auth-layout'
 import { LocationPicker, type LocationValue } from '@/components/mealsaver/location-picker'
 
@@ -381,7 +381,7 @@ export default function NGORegisterPage() {
             <div className="pt-2">
               <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-foreground">
                 <span className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-primary">
-                  <span className="text-[10px] text-primary">✓</span>
+                  <Check size={10} className="text-primary" />
                 </span>
                 Document Verification
               </div>
@@ -414,9 +414,7 @@ export default function NGORegisterPage() {
                 onChange={(e) => setAgreed(e.target.checked)}
                 className="mt-0.5 h-4 w-4 accent-primary"
               />
-              I agree to MealSaver's{' '}
-              <Link href="#" className="underline">Terms & Conditions</Link> and{' '}
-              <Link href="#" className="underline">Privacy Policy</Link>.
+              I agree to MealSaver&apos;s platform terms and privacy policy.
             </label>
 
             <button

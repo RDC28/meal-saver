@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Clock, MapPin, Phone, CheckCircle2, X, Loader2, AlertCircle, Store } from 'lucide-react'
+import { ArrowLeft, Clock, MapPin, Phone, CheckCircle2, X, Loader2, AlertCircle, Store, Utensils } from 'lucide-react'
 import { DashboardSidebar } from '@/components/mealsaver/dashboard-sidebar'
 
 interface DonationDetail {
@@ -129,7 +129,7 @@ export default function NGODonationDetailPage() {
           {/* Food card */}
           <div className="rounded-2xl border border-border bg-card px-6 py-5 shadow-sm space-y-4">
             <div className="flex items-start gap-4">
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-4xl">🍛</div>
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-orange-50"><Utensils className="h-10 w-10 text-orange-500" /></div>
               <div className="space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-lg font-bold text-foreground">{donation.title}</h1>

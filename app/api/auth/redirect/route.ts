@@ -3,22 +3,21 @@ import { redirect } from 'next/navigation'
 import { getSessionPayload } from '@/lib/auth/session'
 
 const roleDestination: Record<string, string> = {
-  donor:            '/donor/dashboard',
-  receiver:         '/ngo/dashboard',
-  admin:            '/admin/dashboard',
+  donor: '/donor/dashboard',
+  receiver: '/ngo/dashboard',
+  admin: '/admin',
   delivery_partner: '/delivery/dashboard',
 }
 
 export async function GET(req: Request) {
   const session = await getSessionPayload()
-  
+
   if (!session || !session.userId) redirect('/login')
 
   // Allow local UI work even when DB is not configured.
   if (!process.env.DATABASE_URL) redirect('/')
 
   const { db, users, donor_profiles, receiver_profiles } = await import('@/lib/db')
-
   const [profile] = await db
     .select({ id: users.id, role: users.role })
     .from(users)

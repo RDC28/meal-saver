@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import {
   ArrowLeft, CheckCircle2, Phone, MapPin, Clock,
-  Store, Building2, Loader2, AlertCircle,
+  Store, Building2, Loader2, AlertCircle, Utensils,
 } from 'lucide-react'
 import { DashboardSidebar } from '@/components/mealsaver/dashboard-sidebar'
 import { StatusBadge } from '@/components/mealsaver/status-badge'
@@ -130,7 +130,7 @@ export default function NGOPickupDetailPage() {
               {d && (
                 <div className="rounded-2xl border border-border bg-card px-6 py-5 shadow-sm space-y-3">
                   <div className="flex items-center gap-4">
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-3xl">🍛</div>
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-orange-50"><Utensils className="h-8 w-8 text-orange-500" /></div>
                     <div>
                       <h2 className="font-semibold text-foreground">{d.title}</h2>
                       <p className="flex items-center gap-1 text-sm text-muted-foreground">

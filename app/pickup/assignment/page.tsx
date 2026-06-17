@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useState, Suspense } from 'react'
-import { Store, Phone, MapPin, Clock, Package, CheckCircle2, Building2, Loader2, AlertCircle } from 'lucide-react'
+import { Store, Phone, MapPin, Clock, Package, CheckCircle2, Building2, Loader2, AlertCircle, Utensils } from 'lucide-react'
 import { StatusBadge } from '@/components/mealsaver/status-badge'
 
 interface PickupDetail {
@@ -173,7 +173,7 @@ function AssignmentContent() {
               <div className="rounded-2xl border border-border bg-card px-6 py-5 shadow-sm space-y-3">
                 <h2 className="text-sm font-semibold text-foreground">Donation</h2>
                 <div className="flex items-center gap-3">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-3xl">🍛</div>
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-orange-50"><Utensils className="h-7 w-7 text-orange-500" /></div>
                   <div>
                     <p className="font-semibold text-foreground">{d.title}</p>
                     <p className="text-sm text-muted-foreground">{d.pickup_city}</p>

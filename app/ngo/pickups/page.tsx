@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Clock, MapPin, Phone, Package } from 'lucide-react'
+import { Clock, MapPin, Phone, Package, Utensils } from 'lucide-react'
 import { getSessionPayload } from '@/lib/auth/session'
 import { db, users, pickup_assignments, donations } from '@/lib/db'
 import { eq, and, inArray } from 'drizzle-orm'
@@ -103,8 +103,8 @@ export default async function NGOPickupsPage() {
               activePickups.map((p) => (
                 <div key={p.id} className="rounded-2xl border border-border bg-card px-5 py-5 shadow-sm">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-3xl">
-                      🍱
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-orange-50">
+                      <Utensils className="h-8 w-8 text-orange-500" />
                     </div>
 
                     <div className="flex-1 space-y-2">

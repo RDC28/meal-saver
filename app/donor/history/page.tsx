@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BarChart2, CheckCircle2, UtensilsCrossed, Leaf } from 'lucide-react'
+import { BarChart2, CheckCircle2, UtensilsCrossed, Leaf, XCircle } from 'lucide-react'
 import { getSessionPayload } from '@/lib/auth/session'
 import { db, donations, users, impact_reports, pickup_assignments, receiver_profiles } from '@/lib/db'
 import { eq, inArray, desc, sum, and } from 'drizzle-orm'
@@ -129,7 +129,7 @@ export default async function DonorHistoryPage() {
               { icon: <CheckCircle2 size={20} className="text-green-600" />, value: totalDelivered,                              label: 'Successful Deliveries', bg: 'bg-green-50' },
               { icon: <UtensilsCrossed size={20} className="text-primary" />, value: totalMeals,                                label: 'Total Meals Saved',      bg: 'bg-secondary' },
               { icon: <Leaf size={20} className="text-emerald-600" />,        value: `${totalWaste.toFixed(0)} kg`,             label: 'Waste Prevented',        bg: 'bg-emerald-50' },
-              { icon: <span className="text-xl">🏅</span>,                   value: totalExpired,                               label: 'Expired / Rejected',     bg: 'bg-red-50' },
+              { icon: <XCircle size={20} className="text-red-600" />,                   value: totalExpired,                               label: 'Expired / Rejected',     bg: 'bg-red-50' },
             ].map((s) => (
               <div key={s.label} className="rounded-2xl border border-border bg-card px-5 py-4 shadow-sm">
                 <div className={`mb-2 inline-flex h-9 w-9 items-center justify-center rounded-lg ${s.bg}`}>

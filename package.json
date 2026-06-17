@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "test": "jest",
     "test:watch": "jest --watch",
+    "seed:demo": "node scripts/seed-demo.mjs",
     "update-contributors": "node scripts/update-contributors.js"
   },
   "dependencies": {

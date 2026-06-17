@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { BarChart2, UtensilsCrossed, CheckCircle2, Leaf } from 'lucide-react'
+import { BarChart2, UtensilsCrossed, CheckCircle2, Leaf, Users, Utensils } from 'lucide-react'
 import { getSessionPayload } from '@/lib/auth/session'
 import { db, users, pickup_assignments, donations, impact_reports } from '@/lib/db'
 import { eq, and, inArray, desc, sum, count, countDistinct } from 'drizzle-orm'
@@ -128,7 +128,7 @@ export default async function NGOHistoryPage() {
                 label: 'Waste Saved',
               },
               {
-                icon: <span className="text-xl">🏅</span>,
+                icon: <Users size={20} className="text-yellow-600" />,
                 bg: 'bg-yellow-50',
                 value: uniqueDonors,
                 label: 'Unique Donors',
@@ -160,8 +160,8 @@ export default async function NGOHistoryPage() {
                     key={d.id}
                     className="flex items-center gap-4 px-6 py-4 hover:bg-secondary/30"
                   >
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-2xl">
-                      🍱
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-orange-50">
+                      <Utensils className="h-6 w-6 text-orange-500" />
                     </div>
                     <div className="flex-1">
                       <p className="font-medium text-foreground">{d.title}</p>
