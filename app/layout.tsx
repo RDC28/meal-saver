@@ -7,21 +7,8 @@ export const metadata: Metadata = {
   title: 'MealSaver - Save Food. Feed People.',
   description: 'Connect surplus food donors with nearby verified NGOs to reduce waste and nourish communities.',
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    icon: '/mealsaver_logo.png',
+    apple: '/mealsaver_logo.png',
   },
 }
 
