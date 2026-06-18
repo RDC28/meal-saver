@@ -16,6 +16,14 @@ MealSaver acts as a connection and logistics platform to eliminate food waste. I
 
 ---
 
+## Screenshots
+*(Add your screenshots to the `public/images` folder and link them here)*
+- ![Donor Dashboard](./public/images/donor-dashboard.png)
+- ![Spatial Map Engine](./public/images/map-routing.png)
+- ![Secure OTP Handover](./public/images/otp-verify.png)
+
+---
+
 ## Technical Architecture
 
 ### Tech Stack
