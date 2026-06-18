@@ -43,6 +43,7 @@ export default async function DonorDashboardPage() {
   let deliveredDonations = 0
   let mealsSaved = 0
   let wasteReduced = 0
+  let co2Saved = 0
 
   if (userId) {
     const [user] = await db.select().from(users).where(eq(users.id, userId as string))
@@ -77,6 +78,7 @@ export default async function DonorDashboardPage() {
           .select({
             meals: sum(impact_reports.meals_saved),
             waste: sum(impact_reports.food_waste_reduced_kg),
+            co2: sum(impact_reports.co2_impact_kg),
           })
           .from(impact_reports)
           .where(eq(impact_reports.donor_id, user.id)),
@@ -86,6 +88,7 @@ export default async function DonorDashboardPage() {
       deliveredDonations = Number(deliveredRow?.count ?? 0)
       mealsSaved = Number(impactRow[0]?.meals ?? 0)
       wasteReduced = Number(impactRow[0]?.waste ?? 0)
+      co2Saved = Number(impactRow[0]?.co2 ?? 0)
 
       recentDonations = recent.map((d) => ({
         id: d.id,
@@ -99,10 +102,10 @@ export default async function DonorDashboardPage() {
   }
 
   const stats = [
-    { icon: <Package className="h-6 w-6 text-primary" />, value: String(activeDonations), label: 'Active Donations', sub: 'View all', href: '/donor/donations' },
     { icon: <CheckCircle className="h-6 w-6 text-green-500" />, value: String(deliveredDonations), label: 'Successful Deliveries', sub: 'View all', href: '/donor/history' },
     { icon: <Utensils className="h-6 w-6 text-orange-500" />, value: mealsSaved.toLocaleString('en-IN'), label: 'Meals Saved', sub: 'All time' },
     { icon: <Leaf className="h-6 w-6 text-green-600" />, value: `${wasteReduced.toLocaleString('en-IN')} kg`, label: 'Waste Reduced', sub: 'All time' },
+    { icon: <Leaf className="h-6 w-6 text-teal-600" />, value: `${co2Saved.toLocaleString('en-IN')} kg`, label: 'CO₂ Saved', sub: 'Emissions prevented' },
   ]
 
   return (

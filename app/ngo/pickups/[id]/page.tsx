@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { DashboardSidebar } from '@/components/mealsaver/dashboard-sidebar'
 import { StatusBadge } from '@/components/mealsaver/status-badge'
+import { ConfirmDeliveryButton } from '@/components/mealsaver/confirm-delivery-button'
 
 interface PickupDetail {
   id: string
@@ -18,6 +19,7 @@ interface PickupDetail {
   scheduled_pickup_time: string | null
   assigned_at: string
   otp_verified: boolean
+  otp_code: string | null
   donation_id: string
   donations: {
     id: string
@@ -160,13 +162,17 @@ export default function NGOPickupDetailPage() {
                     <span className="font-medium text-foreground capitalize">{v}</span>
                   </div>
                 ))}
-                {!pickup.otp_verified && (
-                  <Link
-                    href={`/pickup/verify?id=${pickup.id}`}
-                    className="flex w-full items-center justify-center rounded-lg border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5"
-                  >
-                    Verify OTP at Pickup
-                  </Link>
+                {!pickup.otp_verified && pickup.otp_code && (
+                  <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 px-5 py-4 text-center">
+                    <p className="text-sm font-semibold text-blue-900 mb-1">Secure Handover Code</p>
+                    <p className="text-xs text-blue-700 mb-3">Show this code to the donor when you arrive to pick up the food.</p>
+                    <div className="text-3xl font-mono font-bold tracking-widest text-blue-700 bg-white py-3 rounded-lg border border-blue-200 shadow-sm">
+                      {pickup.otp_code.substring(0,3)}-{pickup.otp_code.substring(3)}
+                    </div>
+                  </div>
+                )}
+                {pickup.pickup_status === 'completed' && (
+                  <ConfirmDeliveryButton pickupId={pickup.id} />
                 )}
               </div>
             </div>

@@ -145,12 +145,6 @@ export default async function NGOPickupsPage() {
                       >
                         Track Pickup
                       </Link>
-                      <Link
-                        href={`/pickup/verify?id=${p.id}`}
-                        className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary text-center"
-                      >
-                        Verify OTP
-                      </Link>
                     </div>
                   </div>
                 </div>

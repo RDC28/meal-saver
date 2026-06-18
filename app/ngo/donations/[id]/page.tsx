@@ -56,7 +56,11 @@ export default function NGODonationDetailPage() {
     setActing('accept')
     setError(null)
     try {
-      const res  = await fetch(`/api/donations/${id}/accept`, { method: 'POST' })
+      const res  = await fetch(`/api/donations/${id}/accept`, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error?.message ?? 'Could not accept')
       router.push('/ngo/pickups')
@@ -70,7 +74,11 @@ export default function NGODonationDetailPage() {
     setActing('reject')
     setError(null)
     try {
-      const res  = await fetch(`/api/donations/${id}/reject`, { method: 'POST' })
+      const res  = await fetch(`/api/donations/${id}/reject`, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error?.message ?? 'Could not reject')
       router.push('/ngo/nearby')

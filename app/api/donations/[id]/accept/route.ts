@@ -134,7 +134,7 @@ export const POST = withReceiver(async (req: NextRequest, { profile }, ctx: Ctx)
   try {
     const [claimed] = await db
       .update(donations)
-      .set({ status: 'accepted' })
+      .set({ status: 'pickup_assigned' })
       .where(
         and(
           eq(donations.id, donationId),
@@ -166,6 +166,8 @@ export const POST = withReceiver(async (req: NextRequest, { profile }, ctx: Ctx)
         },
       })
 
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString()
+
     await db
       .insert(pickup_assignments)
       .values({
@@ -176,6 +178,7 @@ export const POST = withReceiver(async (req: NextRequest, { profile }, ctx: Ctx)
         pickup_status: 'assigned',
         scheduled_pickup_time: body.scheduled_pickup_time ? new Date(body.scheduled_pickup_time) : null,
         pickup_notes: body.pickup_notes ?? null,
+        otp_code: otpCode,
       })
       .onConflictDoUpdate({
         target: pickup_assignments.donation_id,
@@ -187,6 +190,7 @@ export const POST = withReceiver(async (req: NextRequest, { profile }, ctx: Ctx)
           scheduled_pickup_time: body.scheduled_pickup_time ? new Date(body.scheduled_pickup_time) : null,
           pickup_notes: body.pickup_notes ?? null,
           actual_pickup_time: null,
+          otp_code: otpCode,
         },
       })
 

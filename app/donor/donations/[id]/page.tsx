@@ -9,6 +9,8 @@ import {
 } from 'lucide-react'
 import { DashboardSidebar } from '@/components/mealsaver/dashboard-sidebar'
 import { StatusBadge } from '@/components/mealsaver/status-badge'
+import { MatchMap } from '@/components/mealsaver/match-map'
+import { OtpHandoverForm } from '@/components/mealsaver/otp-handover-form'
 
 interface DonationDetail {
   id: string
@@ -48,6 +50,34 @@ const STEPS = [
 function fmt(iso: string | null) {
   if (!iso) return '—'
   return new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
+}
+
+function MatchMapSection({ donationId }: { donationId: string }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [mapData, setMapData] = useState<any>(null)
+  useEffect(() => {
+    fetch(`/api/donations/${donationId}/match-status`)
+      .then(res => res.json())
+      .then(json => {
+        if (json.data) setMapData(json.data)
+      })
+      .catch(console.error)
+  }, [donationId])
+
+  if (!mapData || !mapData.donation?.lat) return null
+
+  return (
+    <div className="rounded-2xl border border-border bg-card px-6 py-5 shadow-sm space-y-3">
+      <h2 className="font-semibold text-foreground">Spatial Match Routing</h2>
+      <p className="text-sm text-muted-foreground pb-2">
+        Live map showing the routed ping to nearby verified NGOs.
+      </p>
+      <MatchMap 
+        donorLocation={{ lat: mapData.donation.lat, lng: mapData.donation.lng }} 
+        receivers={mapData.notifiedReceivers} 
+      />
+    </div>
+  )
 }
 
 export default function DonorDonationDetailPage() {
@@ -253,6 +283,16 @@ export default function DonorDonationDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Map Section */}
+          {!isCancelled && statusIdx >= 1 && donation.status !== 'pickup_assigned' && donation.status !== 'picked_up' && donation.status !== 'delivered' && (
+            <MatchMapSection donationId={id} />
+          )}
+
+          {/* OTP Handover Section */}
+          {donation.status === 'pickup_assigned' && (
+            <OtpHandoverForm donationId={id} />
+          )}
 
           {/* Actions */}
           {(canEdit || canCancel) && (

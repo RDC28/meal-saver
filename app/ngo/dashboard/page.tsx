@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { RefreshCw, Clock, MapPin, Heart, CheckCircle, Package, Utensils } from 'lucide-react'
 import { getSessionPayload } from '@/lib/auth/session'
-import { db, users, receiver_profiles, donations, pickup_assignments, impact_reports } from '@/lib/db'
+import { db, users, receiver_profiles, donations, pickup_assignments, impact_reports, donation_receiver_notifications } from '@/lib/db'
 import { eq, and, ilike, sql, count, sum } from 'drizzle-orm'
 import { DashboardSidebar } from '@/components/mealsaver/dashboard-sidebar'
 
@@ -54,7 +54,7 @@ export default async function NGODashboardPage() {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  const [nearbyDonations, [availableCount], [acceptedToday], impactRow] = await Promise.all([
+  const [nearbyDonations, [availableCount], [acceptedToday], impactRow, incomingAlerts] = await Promise.all([
     city
       ? db
           .select()
@@ -84,6 +84,23 @@ export default async function NGODashboardPage() {
       .select({ meals: sum(impact_reports.meals_saved) })
       .from(impact_reports)
       .where(eq(impact_reports.receiver_id, user.id)),
+
+    db
+      .select({
+        id: donations.id,
+        title: donations.title,
+        quantity: donations.quantity_description,
+        is_urgent: donations.is_urgent,
+      })
+      .from(donations)
+      .innerJoin(donation_receiver_notifications, eq(donation_receiver_notifications.donation_id, donations.id))
+      .where(
+        and(
+          eq(donation_receiver_notifications.receiver_id, user.id),
+          eq(donation_receiver_notifications.response, 'no_response'),
+          eq(donations.status, 'pending_acceptance')
+        )
+      ),
   ])
 
   const totalMeals = Number(impactRow[0]?.meals ?? 0)
@@ -110,6 +127,31 @@ export default async function NGODashboardPage() {
             View all
           </Link>
         </div>
+
+        {incomingAlerts.length > 0 && (
+          <div className="px-8 pt-6 pb-2">
+            <div className="rounded-xl border border-blue-200 bg-blue-50 px-6 py-5 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
+              <div className="flex flex-col md:flex-row md:items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-100">
+                  <Utensils className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <h3 className="text-lg font-bold text-blue-900">Incoming Match Alert!</h3>
+                  <p className="text-sm text-blue-800">
+                    A donor nearby just posted <span className="font-semibold">{incomingAlerts[0].title}</span>. 
+                    You have been exclusively pinged to rescue this food.
+                  </p>
+                </div>
+                <Link
+                  href={`/ngo/donations/${incomingAlerts[0].id}`}
+                  className="shrink-0 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-blue-700 shadow-sm transition-colors text-center"
+                >
+                  View &amp; Accept
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="px-8 py-6 space-y-6">
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
